@@ -1,0 +1,59 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- roscore automatically started by roslaunch -->
+
+  <!-- start mavlink node -->
+  <!-- px4.launch already run by ROV -->
+  <!-- <include file="$(find bluerov)/launch/apm.launch" /> -->
+
+  <!-- start joy_node -->
+    <group ns="br4"> 
+    <arg name="ns" default="br4"/>
+    <node respawn="true" pkg="joy" type="joy_node" name="joy_node" output="screen">
+      <param name="dev" value="/dev/input/js0" type="string"/>
+    </node> 
+
+    <!-- start telexbox to convert joystick values into vel -->
+    <node pkg="autonomous_rov" type="teleop_xbox" name="teleop_xbox" output="screen">
+    </node>  
+
+    <arg name="arg1" default="--device /dev/ttyUSB0"/>  
+
+    
+  <!-- rosbag for listener_vel_control.py file -->
+    
+    <!-- controller velocity (surge = 0/heave = 1/yaw = 2)-->
+     <arg name="controller_label" default= "0"/>
+    <!-- surge -->
+     <arg name="g" default= "0"/>
+     <arg name="Kp_x" default= "0.06"/>
+     <arg name="Ki_x" default= "0.1"/>
+     <arg name="Kd_x" default= "0.0"/>
+    <!-- sway -->
+     <arg name="Kp_y" default= "0.006"/>
+     <arg name="Ki_y" default= "0.0"/>
+     <arg name="Kd_y" default= "0.02"/>
+    <!-- heave -->
+     <arg name="Kp_z" default= "0"/>
+     <arg name="Ki_z" default= "0"/>
+     <arg name="Kd_z" default= "0"/>
+    <!-- heading -->
+     <arg name="Kp_psi" default= "0.085"/>
+     <arg name="Ki_psi" default= "0"/>
+     <arg name="Kd_psi" default= "0.1"/>
+
+    <node respawn="true" pkg="autonomous_rov" type="listener_yaw.py" name="listener" output="screen" args="--controller_label $(arg controller_label) --g $(arg g) --Kp_x $(arg Kp_x) --Ki_x $(arg Ki_x) --Kd_x $(arg Kd_x) --Kp_y $(arg Kp_y) --Ki_y $(arg Ki_y) --Kd_y $(arg Kd_y) --Kp_z $(arg Kp_z) --Ki_z $(arg Ki_z) --Kd_z $(arg Kd_z) --Kp_psi $(arg Kp_psi) --Ki_psi $(arg Ki_psi) --Kd_psi $(arg Kd_psi)"
+           ></node>
+    <!-- Bag name  -->
+    <arg name="bag_name" default="PID_velocity_Control=$(arg controller_label)_Kp_x$(arg Kp_x)_Ki_x=$(arg Ki_x)_Kd_x=$(arg Kd_x)_g=$(arg g)_Kp_y$(arg Kp_y)_Ki_y=$(arg Ki_y)_Kd_y=$(arg Kd_y)_Kp_psi$(arg Kp_psi)_Ki_psi=$(arg Ki_psi)_Kd_psi=$(arg Kd_psi)"/>
+
+    <node name="bag_record" pkg="rosbag" type="record" args="record -o $(find autonomous_rov)/bags/pid_velocity_bags/$(arg bag_name).bag /$(arg ns)/depth/state /$(arg ns)/mavros/imu/data /$(arg ns)/distance_sonar /$(arg ns)/mavros/rc/override /$(arg ns)/linear_velocity /$(arg ns)/angular_velocity /$(arg ns)/angle_degree /$(arg ns)/do/thing">
+       </node>
+    </group>
+
+</launch>
+
+
+
+
