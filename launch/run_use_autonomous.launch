@@ -20,7 +20,7 @@
 
     <arg name="arg1" default="--device /dev/ttyUSB0"/>  
 
-    <node respawn="true" pkg="autonomous_rov" type="listener_pos_control.py" name="listener" output="screen" 
+    <node respawn="true" pkg="autonomous_rov" type="listener_MIR.py" name="listener" output="screen" 
            ></node>
   
   </group>
