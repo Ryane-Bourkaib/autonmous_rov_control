@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from doctest import master
 import math
 from os import kill
 import string
@@ -32,29 +33,10 @@ import argparse
 
 
 # ---------- Global Variables ---------------
-global enable_depth
-global init_p0
-global counter
-
-global depth_p0
-global depth_wrt_startup
-global custom_SM
-global custom_PI
-
-global wall_dist_pwm
-global depth_pwm
-global yaw_pwm
-global sway_pwm
-
 
 set_mode = [0]*3
 Vmax_mot = 1900
 Vmin_mot = 1100
-
-angle_wrt_startup = [0]*3
-depth_wrt_startup = 0
-depth_p0 = 0
-counter = 0
 
 # Conditions
 init_a0 = True
@@ -65,30 +47,10 @@ set_mode[0] = True   # Mode manual
 set_mode[1] = False  # Mode automatic without correction
 set_mode[2] = False  # Mode with correction
 
-custom_PI = False
-do_surge = True
-enable_ping = True
-pinger_confidence = 0
-pinger_distance = 0
-
-# Linear and angular velocities
-u = 0  # Initial linear surge velocity
-v = 0  # Initial linear sway velocity
-w = 0  # Initial linear heave velocity
-
-p = 0  # angular  velocity along x
-q = 0  # angular velocity along y
-r = 0  # angular velocity along z
-
 
 def joyCallback(data):
-    global depth_p0
     global arming
     global set_mode
-    global init_a0
-    global init_p0
-    global mode
-    global custom_PI
 
     # Joystick buttons
     btn_arm = data.buttons[7]           # Start button
@@ -112,22 +74,17 @@ def joyCallback(data):
         set_mode[0] = True
         set_mode[1] = False
         set_mode[2] = False
-        custom_SM = False
         rospy.loginfo("Mode manual")
     if (btn_automatic_mode and not set_mode[1]):
         set_mode[0] = False
         set_mode[1] = True
         set_mode[2] = False
-        custom_SM = False
         rospy.loginfo("Mode automatic")
     if (btn_corrected_mode and not set_mode[2]):
-        init_a0 = True
-        init_p0 = True
         # set sum errors to 0 here, ex: Sum_Errors_Vel = [0]*3
         set_mode[0] = False
         set_mode[1] = False
         set_mode[2] = True
-        custom_PI = True
         rospy.loginfo("Mode correction")
 
 
@@ -168,24 +125,6 @@ def velCallback(cmd_vel):
 
     setOverrideRCIN(pitch_left_right, roll_left_right, ascend_descend,
                     yaw_left_right, forward_reverse, lateral_left_right)
-
-
-rho = 1000.0
-gravity = 9.80665
-
-
-# PID Parameters :
-I0_x, I0_y, I0_z, I0_theta, I0_psi = 0, 0, 0, 0, 0  # Initial value of integral
-e0_x, e0_y, e0_z, e0_psi = 0, 0, 0, 0  # Initial error
-
-# Filter gains :
-alpha = 0.45
-beta = 0.1
-u_e0, ud_e0 = 0, 0  # Estimated surge velocity/position
-vd_e0, v_e0 = 0, 0  # Estimated sway velocity/position
-
-u_d = 0  # Desired surge velocity
-yaw_d = 0  # Desired yaw angle
 
 
 def mapValueScalSat(value):
@@ -236,18 +175,6 @@ def DoThing(msg):
     print(msg.data)
     setOverrideRCIN(1500, 1500, 1500, 1500, msg.data, 1500)
 
-####################Functions######################################
-
-# Function used to enble the depth calback
-
-
-def EnableDepthCallback(msg):
-    global enable_depth
-    global init_p0
-    global counter
-    counter = 0
-    enable_depth = True
-    init_p0 = True
 
 class Master:
     def __init__(self):
@@ -256,33 +183,58 @@ class Master:
         rospy.Subscriber("controller/yaw/effort", Float64, self.yaw_cb)
         rospy.Subscriber("controller/depth/effort", Float64, self.depth_cb)
         rospy.Subscriber("controller/sway/effort", Float64, self.sway_cb)
+        
+        self.depth_setpoint_pub = rospy.Publisher("controllers/depth/desired",Float64,queue_size=10)
+        self.yaw_setpoint_pub = rospy.Publisher("controllers/yaw/desired",Float64,queue_size=10)
+        self.surge_setpoint_pub = rospy.Publisher("controllers/surge/desired",Float64,queue_size=10)
+        self.sway_setpoint_pub = rospy.Publisher(
+            "controllers/sway/desired", Float64, queue_size=10)
 
         self.surge_pwm = 1500
         self.depth_pwm = 1500
         self.sway_pwm = 1500
         self.yaw_pwm = 1500
+        self.free_dist_thresh = 700
+        self.depth_desired = 0.5
+        self.yaw_desired = 0.0
+        self.surge_desired = 0.5
+        self.sway_desired = 0.0
         
         self.surge = 0
         self.yaw = 0
         self.sway = 0
         self.depth = 0
+        self.state_names = ["drown", "go_to_wall", "keep_to_wall", "search"]
+        # self.state_nums = {name:val for val, name in self.state_names.items()}
+        self.actions = {"drown": self.drown_action,
+                        "go_to_wall": self.go_to_wall_action,
+                        "keep_to_wall": self.keep_to_wall_action,
+                        "search": self.search_action}
+        self.state = 0
+        self.prev_state = None
+        
+        self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
+                            surge=self.surge_desired, sway=self.sway_desired)
 
     def surge_cb(self, msg):
         self.surge_pwm = self.PWM_Cmd(msg.data[0])
         self.surge = msg.data[1]
+        self.update_state()
 
     def yaw_cb(self, msg):
-        self.self.surge_pwm = self.PWM_Cmd(msg.data[0])
+        self.surge_pwm = self.PWM_Cmd(msg.data[0])
         self.yaw = msg.data[1]
-
+        self.update_state()
 
     def depth_cb(self, msg):
         self.depth_pwm = self.PWM_Cmd(msg.data[0])
         self.depth = msg.data[1]
+        self.update_state()
 
     def sway_cb(self, msg):
         self.sway_pwm = self.PWM_Cmd(msg.data[0])
         self.sway = msg.data[1]
+        self.update_state()
 
     # Function used to calculate the necessary PWM for each motor
 
@@ -301,26 +253,62 @@ class Master:
             PWM = Vmin_mot
         return PWM
 
-    def do_thing(self):
-        # all logic should go here
-        pass
+    def send_setpoints(self, depth, yaw, surge, sway):
+        self.depth_setpoint_pub.publish(Float64(depth))
+        self.yaw_setpoint_pub.publish(Float64(yaw))
+        self.surge_setpoint_pub.publish(Float64(surge))
+        self.sway_setpoint_pub.publish(Float64(sway))
+    
+    def update_state(self):
+        self.actions[self.state]
+        
+        if abs(abs(self.depth) - self.depth_desired) > 0.1:
+            self.state = "drown"
+            return
+        
+        elif self.state == "drown":
+            if abs(abs(self.depth) - self.depth_desired) <= 0.1:
+                self.state = "go_to_wall"
+            return
+        
+        elif self.state == "go_to_wall":
+            if abs(self.surge - self.surge_desired) < 100:
+                self.state = "keep_to_wall"
+            return
+        
+        elif self.state == "keep_to_wall":
+            self.state = "search"
+            #self.state = "bonus"
+            return
+        
+        elif self.state == "search":
+            if self.surge >= self.free_dist_thresh:
+                self.state = "go_to_wall"
+            return           
+
+    def drown_action(self):
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        self.yaw_pwm, 1500, self.sway_pwm)
+    
+    def go_to_wall_action(self):
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        self.yaw_pwm, self.surge, self.sway_pwm)
+        
+    def keep_to_wall_action(self):
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        self.yaw_pwm, self.surge, self.sway_pwm)
+    
+    def search_action(self):
+        self.yaw_desired -= 0.5
+        self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
+                    surge=self.surge_desired, sway=self.sway_desired)
+        setOverrideRCIN(1500, 1500, self.depth_pwm,self.yaw_pwm, 1500, 1500)
 
 
 def subscriber():
     rospy.Subscriber("joy", Joy, joyCallback)
     rospy.Subscriber("cmd_vel", Twist, velCallback)
-
-    rospy.Subscriber("enable_depth", Empty, EnableDepthCallback)
     rospy.Subscriber("do/thing", Int16, DoThing)
-
-    # Controllers Subscribers
-    rospy.Subscriber("controller/surge/effort", Float64, wall_dist_cb)
-    rospy.Subscriber("controller/yaw/effort", Float64, yaw_cb)
-    rospy.Subscriber("controller/depth/effort", Float64, depth_cb)
-    rospy.Subscriber("controller/sway/effort", Float64, sway_cb)
-    
-    hz = 50.0
-    rospy.Timer(rospy.Duration.from_sec(1/hz), main_cb)
 
     rospy.spin()  # Execute subscriber in loop
 
@@ -329,6 +317,9 @@ if __name__ == '__main__':
 
     armDisarm(False)  # Not automatically disarmed at startup
     rospy.init_node('autonomous_MIR', anonymous=False)
+    
+    master = Master()
+    
     pub_msg_override = rospy.Publisher(
         "mavros/rc/override", OverrideRCIn, queue_size=10, tcp_nodelay=True)
     pub_angle_degre = rospy.Publisher(
