@@ -18,8 +18,8 @@ class YawController:
 
         self.sensor_sub = rospy.Subscriber("/dvl/data", DVL, self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
-        self.desired_val_sub = rospy.Subscriber("controllers/sway/desired", Float64, self.desired_val_callback)
-        self.pub = rospy.Publisher('controllers/sway/effort', Float64, queue_size=10)
+        self.desired_val_sub = rospy.Subscriber("controller/sway/desired", Float64, self.desired_val_callback)
+        self.pub = rospy.Publisher('controller/sway/effort', Float64, queue_size=10)
         
         self.init = False
 
@@ -28,6 +28,9 @@ class YawController:
         self.step = 0.02
 
         self.controller = PID()
+
+        self.v_e0 = 0
+        self.vd_e0 = 0
 
         self.get_params()
         self.set_controller()
@@ -45,6 +48,8 @@ class YawController:
         self.kd = rospy.get_param('controller/sway/kd', 0.0)
 
     def reset_callback(self, data):
+        self.v_e0 = 0
+        self.vd_e0 = 0
         self.init = True
 
     def sensor_callback(self,data): 
@@ -53,8 +58,8 @@ class YawController:
         beta = 0.1
 
         # Filter : 
-        vd_e, v_e = alpha_beta_gamma_filter(v_e0, vd_e0, 0, v, alpha, beta, 0.1) 
-        v_e0, vd_e0 = v_e, vd_e
+        vd_e, v_e = alpha_beta_gamma_filter(self.v_e0, self.vd_e0, 0, v, alpha, beta, 0.1) 
+        self.v_e0, self.vd_e0 = v_e, vd_e
 
         control_effort = self.controller.control(self.desired_val, v_e, vd_e)
         self.pub.publish(Float64(control_effort))
