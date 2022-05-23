@@ -170,96 +170,8 @@ def velCallback(cmd_vel):
                     yaw_left_right, forward_reverse, lateral_left_right)
 
 
-def pingerCallback(data):
-    global pinger_confidence
-    global pinger_distance
-    global pinger_0
-    if enable_ping == True:
-        pinger_distance = data.data[0]
-        pinger_confidence = data.data[1]
-
-
-def OdoCallback(data):
-    global angle_roll_a0
-    global angle_pitch_a0
-    global angle_yaw_a0
-    global angle_wrt_startup
-    global init_a0
-    global p
-    global q
-    global r
-
-    orientation = data.orientation
-    angular_velocity = data.angular_velocity
-
-    # extraction of yaw angle
-    q = [orientation.x, orientation.y, orientation.z, orientation.w]
-    euler = tf.transformations.euler_from_quaternion(q)
-    angle_roll = euler[0]
-    angle_pitch = euler[1]
-    angle_yaw = euler[2]
-
-    if (init_a0):
-        # at 1st execution, init
-        angle_roll_a0 = angle_roll
-        angle_pitch_a0 = angle_pitch
-        angle_yaw_a0 = angle_yaw
-        init_a0 = False
-
-    angle_wrt_startup[0] = (angle_roll - angle_roll_a0) * 180/math.pi
-    angle_wrt_startup[1] = (angle_pitch - angle_pitch_a0) * 180/math.pi
-    angle_wrt_startup[2] = (angle_yaw - angle_yaw_a0) * 180/math.pi
-
-    angle = Twist()
-    angle.angular.x = angle_wrt_startup[0]
-    angle.angular.y = angle_wrt_startup[1]
-    angle.angular.z = angle_wrt_startup[2]
-
-    pub_angle_degre.publish(angle)
-
-    # Extraction of angular velocity
-    p = angular_velocity.x * 180/math.pi
-    q = angular_velocity.y * 180/math.pi
-    r = angular_velocity.z * 180/math.pi
-
-    ang_vel = Twist()
-    ang_vel.angular.x = p
-    ang_vel.angular.y = q
-    ang_vel.angular.z = r
-    pub_angular_velocity.publish(ang_vel)
-
-
 rho = 1000.0
 gravity = 9.80665
-
-
-def PressureCallback(data):
-    global SM_iteretion
-
-    global depth_p0
-    global depth_wrt_startup
-    global init_p0
-    global enable_depth
-
-    if(enable_depth):
-        pressure = data.fluid_pressure
-
-        if (init_p0):
-            # 1st execution, init
-            depth_p0 = (pressure - 101300)/(rho * gravity)
-            init_p0 = False
-
-        depth_wrt_startup = (pressure - 101300)/(rho * gravity) - depth_p0
-
-    # Only continue if manual_mode is disabled
-    if (set_mode[0]):
-        return
-    elif (set_mode[1]):
-        # Only continue if automatic_mode is enabled
-        # Define an arbitrary velocity command and observe robot's velocity
-        #setOverrideRCIN ( Pitch , Roll , Heave , Yaw ,Surge, Sway)
-        setOverrideRCIN(1500, 1500, 1700, 1500, 1500, 1500)
-        return
 
 
 # PID Parameters :
@@ -274,66 +186,6 @@ vd_e0, v_e0 = 0, 0  # Estimated sway velocity/position
 
 u_d = 0  # Desired surge velocity
 yaw_d = 0  # Desired yaw angle
-
-
-def DvlCallback(data):
-    global set_mode
-    global custom_PI
-    global angle_wrt_startup
-    global u
-    global v
-    global w
-    global r
-    # Initialisations
-    global I0_x
-    global I0_y
-    global I0_z
-    global I0_theta
-    global I0_psi
-    global e0_x
-    global e0_y
-    global e0_z
-    global e0_psi
-    global yaw_d
-
-    # Filter parameters
-    global u_e0
-    global ud_e0
-    global v_e0
-    global vd_e0
-    global u_d
-    global yaw_d
-    global do_surge
-
-    u = data.velocity.x  # Linear velocity along x (surge)
-    v = data.velocity.y  # Linear velocity along y (sway)
-    w = data.velocity.z  # Linear velocity along z (heave)
-
-    # Filter :
-    ud_e, u_e = alpha_beta_gamma_filter(u_e0, ud_e0, 0, u, alpha, beta, 0.1)
-    vd_e, v_e = alpha_beta_gamma_filter(v_e0, vd_e0, 0, v, alpha, beta, 0.1)
-    u_e0, ud_e0 = u_e, ud_e
-    v_e0, vd_e0 = v_e, vd_e
-
-    linear_vel = Twist()
-    linear_vel.linear.x = u_e
-    linear_vel.linear.y = v_e
-    linear_vel.linear.z = w
-    pub_linear_vel.publish(linear_vel)
-
-##################Control###################################
-# Apply a control (PID) that allow the robot to move forward while maintaining a fixed heading (surge/sway and yaw control)
-# Stopped the robot at a distance (0.7 m) of a frontal obstacle then find a free path heading to move forward again.
-
-    # Only continue if manual_mode is disabled
-    if (set_mode[0]):
-        return
-    elif (set_mode[1]):
-        # Only continue if automatic_mode is enabled
-        # Define an arbitrary velocity command and observe robot's velocity
-        #setOverrideRCIN ( Pitch , Roll , Heave , Yaw ,Surge, Sway)
-        setOverrideRCIN(1500, 1500, 1700, 1500, 1500, 1500)
-        return
 
 
 def mapValueScalSat(value):
@@ -442,11 +294,7 @@ def main_cb():
 def subscriber():
     rospy.Subscriber("joy", Joy, joyCallback)
     rospy.Subscriber("cmd_vel", Twist, velCallback)
-    rospy.Subscriber("mavros/imu/data", Imu, OdoCallback)
-    rospy.Subscriber("mavros/imu/water_pressure", FluidPressure, PressureCallback)
-    rospy.Subscriber("/dvl/data", DVL, DvlCallback)
-
-    rospy.Subscriber("distance_sonar", Float64MultiArray, pingerCallback)
+    
     rospy.Subscriber("enable_depth", Empty, EnableDepthCallback)
     rospy.Subscriber("do/thing", Int16, DoThing)
 
@@ -476,38 +324,5 @@ if __name__ == '__main__':
         'angular_velocity', Twist, queue_size=10, tcp_nodelay=True)
     pub_linear_vel = rospy.Publisher(
         'linear_velocity', Twist, queue_size=10, tcp_nodelay=True)
-
-    parser = argparse.ArgumentParser(description='SM_PID_velocity_Control')
-    parser.add_argument('--controller_label', type=int, default=0)
-
-    # Flotability parameter
-    parser.add_argument('--g', type=float, default=0)
-    # PID gain for surge control
-    parser.add_argument('--Kp_x', type=float, default=0)
-    parser.add_argument('--Ki_x', type=float, default=0)
-    parser.add_argument('--Kd_x', type=float, default=0)
-    # PID gain for sway control
-    parser.add_argument('--Kp_y', type=float, default=0)
-    parser.add_argument('--Ki_y', type=float, default=0)
-    parser.add_argument('--Kd_y', type=float, default=0)
-    # PID gain for depth control
-    parser.add_argument('--Kp_z', type=float, default=0)
-    parser.add_argument('--Ki_z', type=float, default=0)
-    parser.add_argument('--Kd_z', type=float, default=0)
-    # PID gain for heading control
-    parser.add_argument('--Kp_psi', type=float, default=0)
-    parser.add_argument('--Ki_psi', type=float, default=0)
-    parser.add_argument('--Kd_psi', type=float, default=0)
-
-    sys.argv = rospy.myargv(argv=sys.argv)
-    args = parser.parse_args()
-
-    controller_label = args.controller_label
-    g = args.g
-
-    Kp_x, Ki_x, Kd_x = args.Kp_x, args.Ki_x, args.Kd_x
-    Kp_y, Ki_y, Kd_y = args.Kp_y, args.Ki_y, args.Kd_y
-    Kp_psi, Ki_psi, Kd_psi = args.Kp_psi, args.Ki_psi, args.Kd_psi
-    Kp_z, Ki_z, Kd_z = args.Kp_z, args.Ki_z, args.Kd_z
 
     subscriber()
