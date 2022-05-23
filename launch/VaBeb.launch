@@ -32,7 +32,6 @@
      <arg name="Ki_x" default= "0.1"/>
      <arg name="Kd_x" default= "0.0"/> -->
     <!-- Pinger Distance -->
-    <param name="g" default= "0"/>
     <param name="controller/surge/kp" default= "0.06"/>
     <param name="controller/surge/ki" default= "0.0"/>
     <param name="controller/surge/kd" default= "0.0"/>
@@ -41,6 +40,7 @@
      <param name="controller/sway/ki" default= "0.0"/>
      <param name="controller/sway/kd" default= "0.02"/>
     <!-- heave -->
+     <param name="controller/depth/g" default= "0"/>
      <param name="controller/depth/kp" default= "0"/>
      <param name="controller/depth/ki" default= "0"/>
      <param name="controller/depth/kd" default= "0"/>

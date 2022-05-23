@@ -47,6 +47,7 @@ class DepthController:
         self.desired_val = msg.data
 
     def get_params(self):
+        self.g = rospy.get_param('controller/depth/g', 0.0)
         self.kp = rospy.get_param('controller/depth/kp', 0.0)
         self.ki = rospy.get_param('controller/depth/ki', 0.0)
         self.kd = rospy.get_param('controller/depth/kd', 0.0)
@@ -70,13 +71,15 @@ class DepthController:
 
         self.depth_wrt_startup = (pressure - 101300)/(self.rho * self.gravity) - depth_p0
         
-        # Filter :
-        
+        # Filter:
         self.zdot_est, self.z_est = alpha_beta_gamma_filter(
             self.z_est, self.zdot_est, 0, self.depth_wrt_startup, self.alpha, self.beta, dt)
         
+        # Control:
+        self.controller.set_step(dt)
         control_effort = self.controller.control(
-            self.desired_val, self.z_est, self.zdot_est)
+            self.desired_val, self.z_est, self.zdot_est, bias=self.g)
+        
         self.pub.publish(Float64(control_effort))
 
 def main(args):

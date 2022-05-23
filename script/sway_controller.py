@@ -26,6 +26,9 @@ class YawController:
         self.startup_sway = 0.0
 
         self.step = 0.02
+        self.prev_time = 0
+        self.alpha = 0.45
+        self.beta = 0.1
 
         self.controller = PID()
 
@@ -54,14 +57,20 @@ class YawController:
 
     def sensor_callback(self,data): 
         v = data.velocity.y  # Linear velocity along y (sway) 
-        alpha = 0.45
-        beta = 0.1
+        
+        # update dt
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        self.prev_time = curr_time
 
         # Filter : 
-        vd_e, v_e = alpha_beta_gamma_filter(self.v_e0, self.vd_e0, 0, v, alpha, beta, 0.1) 
-        self.v_e0, self.vd_e0 = v_e, vd_e
+        self.vd_e0, self.v_e0 = alpha_beta_gamma_filter(
+            self.v_e0, self.vd_e0, 0, v, self.alpha, self.beta, dt)
 
-        control_effort = self.controller.control(self.desired_val, v_e, vd_e)
+        # Control:
+        self.controller.set_step(dt)
+        control_effort = self.controller.control(
+            self.desired_val, self.v_e0, self.vd_e0)
         self.pub.publish(Float64(control_effort))
 
 def main(args):
