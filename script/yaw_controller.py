@@ -64,8 +64,7 @@ class YawController:
 
 def main(args):
   rospy.init_node('yaw_controller_node')
-  desired_val = rospy.get_param('controller/yaw/desired', 0.0)
-  controller = YawController(desired_val= desired_val)
+  controller = YawController()
   try:
     rospy.spin()
   except KeyboardInterrupt:
