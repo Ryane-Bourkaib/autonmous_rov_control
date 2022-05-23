@@ -57,10 +57,11 @@ class SurgeController:
         self.prev_time = curr_time
 
         surge = pinger_distance
+        surge_error = self.desired_val - surge
 
         # Control:
         self.controller.set_step(dt)
-        control_effort = self.controller.control(self.desired_val, surge)  #removed r
+        control_effort = self.controller.control(surge_error)  #removed r
         self.pub.publish(Float64(control_effort))
 
 def main(args):
