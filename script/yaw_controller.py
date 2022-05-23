@@ -38,7 +38,6 @@ class YawController:
         self.desired_val = msg.data
 
     def get_params(self):
-        self.desired_val = rospy.get_param('controller/yaw/desired', 0.0)
         self.kp = rospy.get_param('controller/yaw/kp', 0.0)
         self.ki = rospy.get_param('controller/yaw/ki', 0.0)
         self.kd = rospy.get_param('controller/yaw/kd', 0.0)
