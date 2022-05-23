@@ -451,10 +451,10 @@ def subscriber():
     rospy.Subscriber("do/thing", Int16, DoThing)
 
     # Controllers Subscribers
-    rospy.Subscriber("control/wall_dist", Float64, wall_dist_cb)
-    rospy.Subscriber("control/yaw", Float64, yaw_cb)
-    rospy.Subscriber("control/depth", Float64, depth_cb)
-    rospy.Subscriber("control/sway", Float64, sway_cb)
+    rospy.Subscriber("controller/surge/effort", Float64, wall_dist_cb)
+    rospy.Subscriber("controller/yaw/effort", Float64, yaw_cb)
+    rospy.Subscriber("controller/depth/effort", Float64, depth_cb)
+    rospy.Subscriber("controller/sway/effort", Float64, sway_cb)
     
     hz = 50.0
     rospy.Timer(rospy.Duration.from_sec(1/hz), main_cb)
