@@ -4,6 +4,7 @@ from script.pid import PID
 from std_msgs.msg import Int16
 from std_msgs.msg import Float64
 from std_msgs.msg import Empty
+from std_msgs.msg import Float64MultiArray
 from geometry_msgs.msg import Twist
 import tf
 import math
@@ -17,7 +18,7 @@ class YawController:
         self.sensor_sub = rospy.Subscriber("mavros/imu/data",Int16,self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
         self.desired_val_sub = rospy.Subscriber("controller/yaw/desired", Float64, self.desired_val_callback)
-        self.pub = rospy.Publisher('controller/yaw/effort', Float64, queue_size=10)
+        self.pub = rospy.Publisher('controller/yaw/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
 
@@ -72,7 +73,9 @@ class YawController:
             e_yaw = e_yaw - 360
 
         control_effort = self.controller.control(e_yaw, r)
-        self.pub.publish(Float64(control_effort))
+        msg = Float64MultiArray()
+        msg.data = [control_effort, yaw]
+        self.pub.publish(msg)
 
 def main(args):
   rospy.init_node('yaw_controller_node')
