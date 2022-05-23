@@ -3,6 +3,7 @@ import rospy
 from script.pid import PID
 from std_msgs.msg import Int16
 from std_msgs.msg import Float64
+from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
 import tf
@@ -19,7 +20,7 @@ class DepthController:
         self.sensor_sub = rospy.Subscriber("mavros/imu/data",Int16,self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
         self.desired_val_sub = rospy.Subscriber("controllers/depth/desired", Float64, self.desired_val_callback)
-        self.pub = rospy.Publisher('controller/depth/effort', Float64, queue_size=10)
+        self.pub = rospy.Publisher('controller/depth/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
         self.depth_wrt_startup = 0
@@ -64,12 +65,14 @@ class DepthController:
         dt = curr_time - self.prev_time
         self.prev_time = curr_time
         
+        depth = (pressure - 101300)/(self.rho * self.gravity)
+        
         if (self.init):
             # 1st execution, init
-            depth_p0 = (pressure - 101300)/(self.rho * self.gravity)
+            depth_p0 = depth
             self.init = False
 
-        self.depth_wrt_startup = (pressure - 101300)/(self.rho * self.gravity) - depth_p0
+        self.depth_wrt_startup = depth - depth_p0
         
         # Filter:
         self.zdot_est, self.z_est = alpha_beta_gamma_filter(
@@ -77,10 +80,13 @@ class DepthController:
         
         # Control:
         self.controller.set_step(dt)
-        control_effort = self.controller.control(
-            self.desired_val, self.z_est, self.zdot_est, bias=self.g)
+        e = self.desired_val - self.z_est
+        control_effort = self.controller.control(e, self.zdot_est, bias=self.g)
         
-        self.pub.publish(Float64(control_effort))
+        # pub
+        msg = Float64MultiArray()
+        msg.data = [control_effort, self.z_est]
+        self.pub.publish(msg)
 
 def main(args):
   rospy.init_node('depth_controller_node')
