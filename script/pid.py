@@ -17,9 +17,9 @@ class PID:
     def set_step(self, step):
         self.step = step
 
-    def control(self, x_desired, x, x_dot = None, bias = 0.0):
+    def control(self, e, x_dot = None, bias = 0.0):
         
-        e =  x_desired - x               #Error between the real and desired value
+        # e =  x_desired - x               #Error between the real and desired value
         P = self.kp * e                           #Proportional controller 
         if x_dot == None : 
             D = self.kd * ((e - self.prev_e)/ self.step)

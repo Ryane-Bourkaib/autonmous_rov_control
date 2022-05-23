@@ -36,7 +36,10 @@ class YawController:
         
     def desired_val_callback(self, msg):
         self.desired_val = msg.data
-
+        if self.desired_val > 180:
+            self.desired_val = self.desired_val - 360
+        if self.desired_val <= -180:
+            self.desired_val = self.desired_val + 360
     def get_params(self):
         self.kp = rospy.get_param('controller/yaw/kp', 0.0)
         self.ki = rospy.get_param('controller/yaw/ki', 0.0)
@@ -62,7 +65,13 @@ class YawController:
         yaw = (angle_yaw - self.startup_yaw) * 180/math.pi
         r = angular_velocity.z * 180/math.pi
 
-        control_effort = self.controller.control(self.desired_val, yaw, r)
+        e_yaw =  self.desired_val - yaw
+        if e_yaw <= -180:
+            e_yaw = e_yaw + 360
+        if e_yaw > 180:
+            e_yaw = e_yaw - 360
+
+        control_effort = self.controller.control(e_yaw, r)
         self.pub.publish(Float64(control_effort))
 
 def main(args):
