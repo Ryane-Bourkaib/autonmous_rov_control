@@ -238,23 +238,6 @@ def DoThing(msg):
 
 ####################Functions######################################
 
-# Function used to calculate the necessary PWM for each motor
-
-def PWM_Cmd(thrust_req):
-    if (thrust_req >= 0):
-        m = 86.93393326839376   # Slope of the positive force linear function
-        b = 1536
-    else:
-        m = 110.918185437553874  # Slope of the negtaive force linear function
-        b = 1464
-
-    PWM = int(m * thrust_req/4) + b
-    if PWM > Vmax_mot:
-        PWM = Vmax_mot
-    if PWM < Vmin_mot:
-        PWM = Vmin_mot
-    return PWM
-
 # Function used to enble the depth calback
 
 
@@ -266,35 +249,67 @@ def EnableDepthCallback(msg):
     enable_depth = True
     init_p0 = True
 
+class Master:
+    def __init__(self):
+        
+        rospy.Subscriber("controller/surge/effort", Float64, self.surge_cb)
+        rospy.Subscriber("controller/yaw/effort", Float64, self.yaw_cb)
+        rospy.Subscriber("controller/depth/effort", Float64, self.depth_cb)
+        rospy.Subscriber("controller/sway/effort", Float64, self.sway_cb)
 
-def wall_dist_cb(msg):
-    global wall_dist_pwm
-    wall_dist_pwm = PWM_Cmd(msg.data)
+        self.surge_pwm = 1500
+        self.depth_pwm = 1500
+        self.sway_pwm = 1500
+        self.yaw_pwm = 1500
+        
+        self.surge = 0
+        self.yaw = 0
+        self.sway = 0
+        self.depth = 0
+
+    def surge_cb(self, msg):
+        self.surge_pwm = self.PWM_Cmd(msg.data[0])
+        self.surge = msg.data[1]
+
+    def yaw_cb(self, msg):
+        self.self.surge_pwm = self.PWM_Cmd(msg.data[0])
+        self.yaw = msg.data[1]
 
 
-def yaw_cb(msg):
-    global yaw_pwm
-    yaw_pwm = PWM_Cmd(msg.data)
+    def depth_cb(self, msg):
+        self.depth_pwm = self.PWM_Cmd(msg.data[0])
+        self.depth = msg.data[1]
 
+    def sway_cb(self, msg):
+        self.sway_pwm = self.PWM_Cmd(msg.data[0])
+        self.sway = msg.data[1]
 
-def depth_cb(msg):
-    global depth_pwm
-    depth_pwm = PWM_Cmd(msg.data)
+    # Function used to calculate the necessary PWM for each motor
 
+    def PWM_Cmd(self, thrust_req):
+        if (thrust_req >= 0):
+            m = 86.93393326839376   # Slope of the positive force linear function
+            b = 1536
+        else:
+            m = 110.918185437553874  # Slope of the negtaive force linear function
+            b = 1464
 
-def sway_cb(msg):
-    global sway_pwm
-    sway_pwm = PWM_Cmd(msg.data)
+        PWM = int(m * thrust_req/4) + b
+        if PWM > Vmax_mot:
+            PWM = Vmax_mot
+        if PWM < Vmin_mot:
+            PWM = Vmin_mot
+        return PWM
 
-def main_cb():
-    # all logic should go here
-    pass
+    def do_thing(self):
+        # all logic should go here
+        pass
 
 
 def subscriber():
     rospy.Subscriber("joy", Joy, joyCallback)
     rospy.Subscriber("cmd_vel", Twist, velCallback)
-    
+
     rospy.Subscriber("enable_depth", Empty, EnableDepthCallback)
     rospy.Subscriber("do/thing", Int16, DoThing)
 
