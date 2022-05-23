@@ -336,8 +336,9 @@ def DvlCallback(data):
         #desired velocity :
         v_d = 0     #Desired sway velocity
         z_d = 0     #Desired depth
-
-        if pinger_distance <= 700 and do_surge:
+        dist_d = 700
+        step = 0.05
+        if pinger_distance <= dist_d:
             u_d = 0
 
             yaw_d += -0.5
@@ -350,22 +351,28 @@ def DvlCallback(data):
             u_d = 0.2
 
         #Surge velocity control using PID controller
-        surge_force = PID_Controller_With_Comp(u_d, u_e, Kp_x, Ki_x, Kd_x, e0_x, I0_x, 0.05, g)
+        # surge_force = PID_Controller_With_Comp(u_d, u_e, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
+        
+        #Pinger Distance control using PID controller
+        surge_force = PID_Controller_With_Comp(
+            dist_d, pinger_distance, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
         
         #Sway velocity control using PID controller
-        sway_force = PID_Controller_With_Comp(v_d, v, Kp_y, Ki_y, Kd_y, e0_y, I0_y, 0.05, g) 
+        sway_force = PID_Controller_With_Comp(
+            v_d, v, Kp_y, Ki_y, Kd_y, e0_y, I0_y, step, g)
 
         #Depth control using PI controller
-        heave_force = PID_Controller_With_Comp(z_d, depth_wrt_startup, Kp_z, Ki_z, Kd_z, e0_z, I0_z, 0.05, g)
+        heave_force = PID_Controller_With_Comp(
+            z_d, depth_wrt_startup, Kp_z, Ki_z, Kd_z, e0_z, I0_z, step, g)
 
         #Heading control using PI controller
         e_yaw = yaw_d - angle_wrt_startup[2]
-        if e_yaw <= 180 : 
-            e_yaw = e_yaw
+        if e_yaw <= -180 : 
+            e_yaw = e_yaw + 360
         if e_yaw > 180 :
             e_yaw = e_yaw - 360
 
-        I = I0_psi +  e_yaw * 0.05  
+        I = I0_psi +  e_yaw * step 
         yaw_torque = - (Kp_psi * e_yaw + Ki_psi * I) - Kd_psi * r 
         I0_psi = I
        

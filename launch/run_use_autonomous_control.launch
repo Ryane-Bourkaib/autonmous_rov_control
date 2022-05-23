@@ -26,10 +26,15 @@
     <!-- controller velocity (surge = 0/heave = 1/yaw = 2)-->
      <arg name="controller_label" default= "0"/>
     <!-- surge -->
-     <arg name="g" default= "0"/>
+     <!-- <arg name="g" default= "0"/>
      <arg name="Kp_x" default= "0.06"/>
      <arg name="Ki_x" default= "0.1"/>
-     <arg name="Kd_x" default= "0.0"/>
+     <arg name="Kd_x" default= "0.0"/> -->
+    <!-- Pinger Distance -->
+    <arg name="g" default= "0"/>
+    <arg name="Kp_x" default= "0.06"/>
+    <arg name="Ki_x" default= "0.0"/>
+    <arg name="Kd_x" default= "0.0"/>
     <!-- sway -->
      <arg name="Kp_y" default= "0.006"/>
      <arg name="Ki_y" default= "0.0"/>
