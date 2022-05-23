@@ -5,6 +5,8 @@ from std_msgs.msg import Int16
 from std_msgs.msg import Float64
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
+from waterlinked_a50_ros_driver.msg import DVL
+from alpha_beta_gamma_filter import alpha_beta_gamma_filter
 import tf
 import math
 
@@ -14,10 +16,10 @@ class YawController:
 
     def __init__(self):
 
-        self.sensor_sub = rospy.Subscriber("mavros/imu/data",Int16,self.sensor_callback)
+        self.sensor_sub = rospy.Subscriber("/dvl/data", DVL, self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
         self.desired_val_sub = rospy.Subscriber("controllers/sway/desired", Float64, self.desired_val_callback)
-        self.pub = rospy.Publisher('controller/sway/effort', Float64, queue_size=10)
+        self.pub = rospy.Publisher('controllers/sway/effort', Float64, queue_size=10)
         
         self.init = False
 
@@ -45,24 +47,16 @@ class YawController:
     def reset_callback(self, data):
         self.init = True
 
-    def sensor_callback(self,data):
-        orientation = data.orientation
-        angular_velocity = data.angular_velocity
+    def sensor_callback(self,data): 
+        v = data.velocity.y  # Linear velocity along y (sway) 
+        alpha = 0.45
+        beta = 0.1
 
-        # extraction of sway angle
-        q = [orientation.x, orientation.y, orientation.z, orientation.w]
-        euler = tf.transformations.euler_from_quaternion(q)
-        angle_sway = euler[2]
+        # Filter : 
+        vd_e, v_e = alpha_beta_gamma_filter(v_e0, vd_e0, 0, v, alpha, beta, 0.1) 
+        v_e0, vd_e0 = v_e, vd_e
 
-        if (self.init):
-            # at 1st execution, init
-            self.startup_sway = angle_sway
-            self.init = False
-
-        sway = (angle_sway - self.startup_sway) * 180/math.pi
-        r = angular_velocity.z * 180/math.pi
-
-        control_effort = self.controller.control(self.desired_val, sway, r)
+        control_effort = self.controller.control(self.desired_val, v_e, vd_e)
         self.pub.publish(Float64(control_effort))
 
 def main(args):
