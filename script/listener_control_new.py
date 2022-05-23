@@ -325,59 +325,6 @@ def DvlCallback(data):
 # Apply a control (PID) that allow the robot to move forward while maintaining a fixed heading (surge/sway and yaw control)
 # Stopped the robot at a distance (0.7 m) of a frontal obstacle then find a free path heading to move forward again.
 
-    if(custom_PI):
-        # desired velocity :
-        v_d = 0  # Desired sway velocity
-        z_d = 0  # Desired depth
-        dist_d = 700
-        step = 0.05
-        if pinger_distance <= dist_d:
-            u_d = 0
-
-            yaw_d += -0.5
-            if yaw_d > 180:
-                yaw_d = yaw_d - 360
-            if yaw_d <= -180:
-                yaw_d = yaw_d + 360
-
-        else:
-            u_d = 0.2
-
-        # Surge velocity control using PID controller
-        # surge_force = PID_Controller_With_Comp(u_d, u_e, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
-
-        # Pinger Distance control using PID controller
-        surge_force = PID_Controller_With_Comp(
-            dist_d, pinger_distance, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
-
-        # Sway velocity control using PID controller
-        sway_force = PID_Controller_With_Comp(
-            v_d, v, Kp_y, Ki_y, Kd_y, e0_y, I0_y, step, g)
-
-        # Depth control using PI controller
-        heave_force = PID_Controller_With_Comp(
-            z_d, depth_wrt_startup, Kp_z, Ki_z, Kd_z, e0_z, I0_z, step, g)
-
-        # Heading control using PI controller
-        e_yaw = yaw_d - angle_wrt_startup[2]
-        if e_yaw <= -180:
-            e_yaw = e_yaw + 360
-        if e_yaw > 180:
-            e_yaw = e_yaw - 360
-
-        I = I0_psi + e_yaw * step
-        yaw_torque = - (Kp_psi * e_yaw + Ki_psi * I) - Kd_psi * r
-        I0_psi = I
-
-        # Send PWM commands to motors
-        sway_pwm = PWM_Cmd(sway_force)
-        surge_pwm = PWM_Cmd(surge_force)
-        heave_pwm = PWM_Cmd(heave_force)
-        yaw_pwm = PWM_Cmd(yaw_torque)
-
-        #setOverrideRCIN ( Pitch , Roll , Heave , Yaw ,Surge, Sway)
-        setOverrideRCIN(1500, 1500, 1500, yaw_pwm, surge_pwm, sway_pwm)
-
     # Only continue if manual_mode is disabled
     if (set_mode[0]):
         return
@@ -487,6 +434,10 @@ def sway_cb(msg):
     global sway_pwm
     sway_pwm = PWM_Cmd(msg.data)
 
+def main_cb():
+    # all logic should go here
+    pass
+
 
 def subscriber():
     rospy.Subscriber("joy", Joy, joyCallback)
@@ -504,6 +455,9 @@ def subscriber():
     rospy.Subscriber("control/yaw", Float64, yaw_cb)
     rospy.Subscriber("control/depth", Float64, depth_cb)
     rospy.Subscriber("control/sway", Float64, sway_cb)
+    
+    hz = 50.0
+    rospy.Timer(rospy.Duration.from_sec(1/hz), main_cb)
 
     rospy.spin()  # Execute subscriber in loop
 
