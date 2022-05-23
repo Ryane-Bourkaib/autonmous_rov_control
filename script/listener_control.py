@@ -338,52 +338,60 @@ def DvlCallback(data):
         z_d = 0     #Desired depth
         dist_d = 700
         step = 0.05
-        if pinger_distance <= dist_d:
-            u_d = 0
 
-            yaw_d += -0.5
-            if yaw_d > 180 :    
-                yaw_d = yaw_d - 360
-            if yaw_d <= -180 :
-                yaw_d = yaw_d + 360
- 
-        else : 
-            u_d = 0.2
-
-        #Surge velocity control using PID controller
-        # surge_force = PID_Controller_With_Comp(u_d, u_e, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
-        
-        #Pinger Distance control using PID controller
-        surge_force = PID_Controller_With_Comp(
-            dist_d, pinger_distance, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
-        
-        #Sway velocity control using PID controller
-        sway_force = PID_Controller_With_Comp(
-            v_d, v, Kp_y, Ki_y, Kd_y, e0_y, I0_y, step, g)
-
-        #Depth control using PI controller
         heave_force = PID_Controller_With_Comp(
             z_d, depth_wrt_startup, Kp_z, Ki_z, Kd_z, e0_z, I0_z, step, g)
-
-        #Heading control using PI controller
-        e_yaw = yaw_d - angle_wrt_startup[2]
-        if e_yaw <= -180 : 
-            e_yaw = e_yaw + 360
-        if e_yaw > 180 :
-            e_yaw = e_yaw - 360
-
-        I = I0_psi +  e_yaw * step 
-        yaw_torque = - (Kp_psi * e_yaw + Ki_psi * I) - Kd_psi * r 
-        I0_psi = I
-       
-        #Send PWM commands to motors
-        sway_pwm = PWM_Cmd(sway_force)
-        surge_pwm = PWM_Cmd(surge_force) 
         heave_pwm = PWM_Cmd(heave_force)
-        yaw_pwm = PWM_Cmd(yaw_torque)
+
+        if (np.abs(depth_wrt_startup - z_d) > 0.1):
+            setOverrideRCIN(1500, 1500, heave_pwm, 1500, 1500, 1500)
+
+        else:
+            if pinger_distance <= dist_d:
+                u_d = 0
+
+                yaw_d += -0.5
+                if yaw_d > 180 :    
+                    yaw_d = yaw_d - 360
+                if yaw_d <= -180 :
+                    yaw_d = yaw_d + 360
+    
+            else : 
+                u_d = 0.2
+
+            #Surge velocity control using PID controller
+            # surge_force = PID_Controller_With_Comp(u_d, u_e, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
+            
+            #Pinger Distance control using PID controller
+            surge_force = PID_Controller_With_Comp(
+                dist_d, pinger_distance, Kp_x, Ki_x, Kd_x, e0_x, I0_x, step, g)
+            
+            #Sway velocity control using PID controller
+            sway_force = PID_Controller_With_Comp(
+                v_d, v, Kp_y, Ki_y, Kd_y, e0_y, I0_y, step, g)
+
+            #Depth control using PI controller
+            # heave_force = PID_Controller_With_Comp(
+            #     z_d, depth_wrt_startup, Kp_z, Ki_z, Kd_z, e0_z, I0_z, step, g)
+
+            #Heading control using PI controller
+            e_yaw = yaw_d - angle_wrt_startup[2]
+            if e_yaw <= -180 : 
+                e_yaw = e_yaw + 360
+            if e_yaw > 180 :
+                e_yaw = e_yaw - 360
+
+            I = I0_psi +  e_yaw * step 
+            yaw_torque = - (Kp_psi * e_yaw + Ki_psi * I) - Kd_psi * r 
+            I0_psi = I
         
-        #setOverrideRCIN ( Pitch , Roll , Heave , Yaw ,Surge, Sway)
-        setOverrideRCIN(1500, 1500, 1500, yaw_pwm, surge_pwm, sway_pwm)
+            #Send PWM commands to motors
+            sway_pwm = PWM_Cmd(sway_force)
+            surge_pwm = PWM_Cmd(surge_force) 
+            yaw_pwm = PWM_Cmd(yaw_torque)
+            
+            #setOverrideRCIN ( Pitch , Roll , Heave , Yaw ,Surge, Sway)
+            setOverrideRCIN(1500, 1500, heave_pwm, yaw_pwm, surge_pwm, sway_pwm)
 
     
     # Only continue if manual_mode is disabled
