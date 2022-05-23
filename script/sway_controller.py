@@ -7,6 +7,7 @@ from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
 from waterlinked_a50_ros_driver.msg import DVL
 from alpha_beta_gamma_filter import alpha_beta_gamma_filter
+from std_msgs.msg import Float64MultiArray
 import tf
 import math
 
@@ -69,8 +70,10 @@ class YawController:
 
         # Control:
         self.controller.set_step(dt)
-        control_effort = self.controller.control(
-            self.desired_val, self.v_e0, self.vd_e0)
+        e_vel = self.desired_val - self.v_e0
+        control_effort = self.controller.control(e_vel, self.vd_e0)
+        msg = Float64MultiArray()
+        msg.data = [control_effort, self.v_e0]
         self.pub.publish(Float64(control_effort))
 
 def main(args):
