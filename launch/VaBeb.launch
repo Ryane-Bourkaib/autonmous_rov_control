@@ -32,27 +32,36 @@
      <arg name="Ki_x" default= "0.1"/>
      <arg name="Kd_x" default= "0.0"/> -->
     <!-- Pinger Distance -->
-    <arg name="g" default= "0"/>
-    <arg name="Kp_x" default= "0.06"/>
-    <arg name="Ki_x" default= "0.0"/>
-    <arg name="Kd_x" default= "0.0"/>
+    <param name="g" default= "0"/>
+    <param name="controller/surge/kp" default= "0.06"/>
+    <param name="controller/surge/ki" default= "0.0"/>
+    <param name="controller/surge/kd" default= "0.0"/>
     <!-- sway -->
-     <arg name="Kp_y" default= "0.006"/>
-     <arg name="Ki_y" default= "0.0"/>
-     <arg name="Kd_y" default= "0.02"/>
+     <param name="controller/sway/kp" default= "0.006"/>
+     <param name="controller/sway/ki" default= "0.0"/>
+     <param name="controller/sway/kd" default= "0.02"/>
     <!-- heave -->
-     <arg name="Kp_z" default= "0"/>
-     <arg name="Ki_z" default= "0"/>
-     <arg name="Kd_z" default= "0"/>
+     <param name="controller/depth/kp" default= "0"/>
+     <param name="controller/depth/ki" default= "0"/>
+     <param name="controller/depth/kd" default= "0"/>
     <!-- heading -->
-     <arg name="Kp_psi" default= "0.085"/>
-     <arg name="Ki_psi" default= "0"/>
-     <arg name="Kd_psi" default= "0.1"/>
+     <param name="controller/yaw/kp" default= "0.085"/>
+     <param name="controller/yaw/ki" default= "0"/>
+     <param name="controller/yaw/kd" default= "0.1"/>
 
     <node respawn="true" pkg="autonomous_rov" type="yaw_controller.py" name="yaw_controller" output="screen">
-        <param name="kp" type="double" value="$(arg Kp_psi)" />
-        <param name="ki" type="double" value="$(arg Ki_psi)" />
-        <param name="kd" type="double" value="$(arg Kd_psi)" />
+    </node>
+
+    <node respawn="true" pkg="autonomous_rov" type="depth_controller.py" name="depth_controller" output="screen">
+    </node>
+    
+    <node respawn="true" pkg="autonomous_rov" type="surge_controller.py" name="surge_controller" output="screen">
+    </node>
+    
+    <node respawn="true" pkg="autonomous_rov" type="sway_controller.py" name="sway_controller" output="screen">
+        <param name="kp" type="double" value="$(arg Kp_y)" />
+        <param name="ki" type="double" value="$(arg Ki_y)" />
+        <param name="kd" type="double" value="$(arg Kd_y)" />
     </node>
 
     <node respawn="true" pkg="autonomous_rov" type="listener_control.py" name="listener" output="screen" args="--controller_label $(arg controller_label) --g $(arg g) --Kp_x $(arg Kp_x) --Ki_x $(arg Ki_x) --Kd_x $(arg Kd_x) --Kp_y $(arg Kp_y) --Ki_y $(arg Ki_y) --Kd_y $(arg Kd_y) --Kp_z $(arg Kp_z) --Ki_z $(arg Ki_z) --Kd_z $(arg Kd_z) --Kp_psi $(arg Kp_psi) --Ki_psi $(arg Ki_psi) --Kd_psi $(arg Kd_psi)"
