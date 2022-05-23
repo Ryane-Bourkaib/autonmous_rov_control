@@ -25,6 +25,7 @@ class SurgeController:
         self.startup_surge = 0.0
 
         self.step = 0.02
+        self.prev_time = 0
 
         self.controller = PID()
 
@@ -47,16 +48,20 @@ class SurgeController:
         self.init = True
 
     def sensor_callback(self,data):
-        global pinger_confidence
-        global pinger_distance
-        global pinger_0
-
         pinger_distance = data.data[0]
         pinger_confidence = data.data[1]
+        
+        # update dt
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        self.prev_time = curr_time
 
         surge = pinger_distance
+        surge_error = self.desired_val - surge
 
-        control_effort = self.controller.control(self.desired_val, surge)  #removed r
+        # Control:
+        self.controller.set_step(dt)
+        control_effort = self.controller.control(surge_error)  #removed r
         self.pub.publish(Float64(control_effort))
 
 def main(args):

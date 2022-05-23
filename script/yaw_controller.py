@@ -25,6 +25,7 @@ class YawController:
         self.startup_yaw = 0.0
 
         self.step = 0.02
+        self.prev_time = 0
 
         self.controller = PID()
 
@@ -52,6 +53,11 @@ class YawController:
     def sensor_callback(self,data):
         orientation = data.orientation
         angular_velocity = data.angular_velocity
+        
+        # update dt
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        self.prev_time = curr_time
 
         # extraction of yaw angle
         q = [orientation.x, orientation.y, orientation.z, orientation.w]
@@ -71,7 +77,9 @@ class YawController:
             e_yaw = e_yaw + 360
         if e_yaw > 180:
             e_yaw = e_yaw - 360
-
+            
+        # Control:
+        self.controller.set_step(dt)
         control_effort = self.controller.control(e_yaw, r)
         msg = Float64MultiArray()
         msg.data = [control_effort, yaw]
