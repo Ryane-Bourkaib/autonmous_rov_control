@@ -45,6 +45,7 @@ class SurgeController:
         self.kd = rospy.get_param('controller/surge/kd', 0.0)
 
     def reset_callback(self, data):
+        self.controller.reset_controller()
         self.init = True
 
     def sensor_callback(self,data):
