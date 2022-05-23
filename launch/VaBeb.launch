@@ -59,9 +59,6 @@
     </node>
     
     <node respawn="true" pkg="autonomous_rov" type="sway_controller.py" name="sway_controller" output="screen">
-        <param name="kp" type="double" value="$(arg Kp_y)" />
-        <param name="ki" type="double" value="$(arg Ki_y)" />
-        <param name="kd" type="double" value="$(arg Kd_y)" />
     </node>
 
     <node respawn="true" pkg="autonomous_rov" type="listener_control.py" name="listener" output="screen" args="--controller_label $(arg controller_label) --g $(arg g) --Kp_x $(arg Kp_x) --Ki_x $(arg Ki_x) --Kd_x $(arg Kd_x) --Kp_y $(arg Kp_y) --Ki_y $(arg Ki_y) --Kd_y $(arg Kd_y) --Kp_z $(arg Kp_z) --Ki_z $(arg Ki_z) --Kd_z $(arg Kd_z) --Kp_psi $(arg Kp_psi) --Ki_psi $(arg Ki_psi) --Kd_psi $(arg Kd_psi)"
