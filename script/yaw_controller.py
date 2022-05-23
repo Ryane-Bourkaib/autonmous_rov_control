@@ -16,7 +16,7 @@ class YawController:
 
         self.sensor_sub = rospy.Subscriber("mavros/imu/data",Int16,self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
-        self.desired_val_sub = rospy.Subscriber("controllers/yaw/desired", Float64, self.desired_val_callback)
+        self.desired_val_sub = rospy.Subscriber("controller/yaw/desired", Float64, self.desired_val_callback)
         self.pub = rospy.Publisher('controller/yaw/effort', Float64, queue_size=10)
         
         self.init = False
