@@ -9,6 +9,8 @@ import tf
 import math
 
 from PI_Controller import*
+from alpha_beta_gamma_filter import alpha_beta_gamma_filter
+
 
 class DepthController:
 
@@ -25,6 +27,12 @@ class DepthController:
         self.rho = 1000.0
         self.gravity = 9.80665
         self.step = 0.02
+        self.prev_time = 0
+        
+        # Filter gains :
+        self.alpha = 0.45
+        self.beta = 0.1
+        self.zdot_est, self.z_est = 0, 0  # Estimated surge velocity/position
 
         self.controller = PID()
 
@@ -39,16 +47,22 @@ class DepthController:
         self.desired_val = msg.data
 
     def get_params(self):
-        self.kp = rospy.get_param('kp', 0.0)
-        self.ki = rospy.get_param('ki', 0.0)
-        self.kd = rospy.get_param('kd', 0.0)
+        self.kp = rospy.get_param('controller/depth/kp', 0.0)
+        self.ki = rospy.get_param('controller/depth/ki', 0.0)
+        self.kd = rospy.get_param('controller/depth/kd', 0.0)
 
     def reset_callback(self, data):
         self.init = True
 
     def sensor_callback(self, data):
+        # get data
         pressure = data.fluid_pressure
-
+        
+        # update dt
+        curr_time = rospy.Time.now().to_sec()
+        dt = curr_time - self.prev_time
+        self.prev_time = curr_time
+        
         if (self.init):
             # 1st execution, init
             depth_p0 = (pressure - 101300)/(self.rho * self.gravity)
@@ -56,8 +70,13 @@ class DepthController:
 
         self.depth_wrt_startup = (pressure - 101300)/(self.rho * self.gravity) - depth_p0
         
+        # Filter :
+        
+        self.zdot_est, self.z_est = alpha_beta_gamma_filter(
+            self.z_est, self.zdot_est, 0, self.depth_wrt_startup, self.alpha, self.beta, dt)
+        
         control_effort = self.controller.control(
-            self.desired_val, self.depth_wrt_startup, r)
+            self.desired_val, self.z_est, self.zdot_est)
         self.pub.publish(Float64(control_effort))
 
 def main(args):
