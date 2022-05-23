@@ -17,6 +17,10 @@ class PID:
     def set_step(self, step):
         self.step = step
 
+    def reset_controller():
+        self.prev_e = 0.0
+        self.prev_i = 0.0 
+
     def control(self, e, x_dot = None, bias = 0.0):
         
         # e =  x_desired - x               #Error between the real and desired value
@@ -32,6 +36,4 @@ class PID:
         self.prev_i = I                                                             #Update the initial value of integral controller 
 
         return control_effort 
-
-
         

@@ -61,8 +61,8 @@
     <node respawn="true" pkg="autonomous_rov" type="sway_controller.py" name="sway_controller" output="screen">
     </node>
 
-    <node respawn="true" pkg="autonomous_rov" type="listener_control.py" name="listener" output="screen" args="--controller_label $(arg controller_label) --g $(arg g) --Kp_x $(arg Kp_x) --Ki_x $(arg Ki_x) --Kd_x $(arg Kd_x) --Kp_y $(arg Kp_y) --Ki_y $(arg Ki_y) --Kd_y $(arg Kd_y) --Kp_z $(arg Kp_z) --Ki_z $(arg Ki_z) --Kd_z $(arg Kd_z) --Kp_psi $(arg Kp_psi) --Ki_psi $(arg Ki_psi) --Kd_psi $(arg Kd_psi)"
-           ></node>
+    <node pkg="autonomous_rov" type="listener_control_new.py" name="listener" output="screen">
+    </node>
     <!-- Bag name  -->
     <!-- <arg name="bag_name" default="PID_velocity_Control=$(arg controller_label)_Kp_x$(arg Kp_x)_Ki_x=$(arg Ki_x)_Kd_x=$(arg Kd_x)_g=$(arg g)_Kp_y$(arg Kp_y)_Ki_y=$(arg Ki_y)_Kd_y=$(arg Kd_y)_Kp_psi$(arg Kp_psi)_Ki_psi=$(arg Ki_psi)_Kd_psi=$(arg Kd_psi)"/> -->
     
