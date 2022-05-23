@@ -29,6 +29,7 @@ class DepthController:
         self.gravity = 9.80665
         self.step = 0.02
         self.prev_time = 0
+        self.depth_p0 = 0
         
         # Filter gains :
         self.alpha = 0.45
@@ -54,6 +55,7 @@ class DepthController:
         self.kd = rospy.get_param('controller/depth/kd', 0.0)
 
     def reset_callback(self, data):
+        self.controller.reset_controller()
         self.init = True
 
     def sensor_callback(self, data):
@@ -69,10 +71,10 @@ class DepthController:
         
         if (self.init):
             # 1st execution, init
-            depth_p0 = depth
+            self.depth_p0 = depth
             self.init = False
 
-        self.depth_wrt_startup = depth - depth_p0
+        self.depth_wrt_startup = depth - self.depth_p0
         
         # Filter:
         self.zdot_est, self.z_est = alpha_beta_gamma_filter(

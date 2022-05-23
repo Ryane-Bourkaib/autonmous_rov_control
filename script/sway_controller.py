@@ -54,6 +54,7 @@ class YawController:
     def reset_callback(self, data):
         self.v_e0 = 0
         self.vd_e0 = 0
+        self.controller.reset_controller()
         self.init = True
 
     def sensor_callback(self,data): 
