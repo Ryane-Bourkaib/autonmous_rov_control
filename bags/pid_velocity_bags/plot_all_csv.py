@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ### Set your path to the folder containing the .csv files
-PATH = './bags/' # Use your path
+PATH = './' # Use your path
 
 ### Fetch all files in path
 fileNames = os.listdir(PATH)

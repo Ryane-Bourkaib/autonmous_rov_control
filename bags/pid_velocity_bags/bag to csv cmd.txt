@@ -8,3 +8,17 @@ rostopic echo -b depth_control_12v_kp_5.bag -p /br2/pid/depth/state > depth_cont
 rostopic echo -b depth_control_12v_kp_5.bag -p /br2/mavros/rc/override > depth_control_12v_kp_5_Thrusters.csv
 
 rostopic echo -b depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2.bag -p /br2/pid/depth/state > depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2_Depth.csv && rostopic echo -b depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2.bag -p /br2/mavros/rc/override > depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2_PWM.csv
+
+############
+
+ping
+rostopic echo -b bonus__2022-05-24-11-55-37.bag -p /br4/distance_sonar/data > bonus_dist.csv
+imu
+rostopic echo -b bonus__2022-05-24-11-55-37.bag -p /br4/mavros/imu/data/orientation > bonus_imu.csv
+#thrusters
+rostopic echo -b bonus__2022-05-24-11-55-37.bag -p /br4/mavros/rc/override > bonus_thrusters.csv
+
+ping
+rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/distance_sonar/data > ObsAvoid_dist.csv;
+rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/mavros/imu/data/orientation > ObsAvoid_imu.csv;
+rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/mavros/rc/override > ObsAvoid_thrusters.csv
