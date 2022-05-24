@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import rospy
-from script.pid import PID
+from pid import PID
 from std_msgs.msg import Int16
 from std_msgs.msg import Float64
 from std_msgs.msg import Empty
@@ -17,15 +17,13 @@ class SwayController:
 
     def __init__(self):
 
-        self.sensor_sub = rospy.Subscriber("/dvl/data", DVL, self.sensor_callback)
-        self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
-        self.desired_val_sub = rospy.Subscriber("controller/sway/desired", Float64, self.desired_val_callback)
         self.pub = rospy.Publisher(
             'controller/sway/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
 
         self.startup_sway = 0.0
+        self.desired_val = 0
 
         self.step = 0.02
         self.prev_time = 0
@@ -39,6 +37,13 @@ class SwayController:
 
         self.get_params()
         self.set_controller()
+        
+        self.sensor_sub = rospy.Subscriber(
+            "/dvl/data", DVL, self.sensor_callback)
+        self.reset_sub = rospy.Subscriber(
+            "controllers/reset", Empty, self.reset_callback)
+        self.desired_val_sub = rospy.Subscriber(
+            "controller/sway/desired", Float64, self.desired_val_callback)
 
     def set_controller(self):
         self.controller.set_gains(self.kp, self.ki, self.kd)
@@ -81,7 +86,7 @@ class SwayController:
         msg.data = [control_effort, self.v_e0]
         self.pub.publish(Float64(control_effort))
 
-def main(args):
+if __name__ == "__main__":
   rospy.init_node('sway_controller_node')
   controller = SwayController()
   try:

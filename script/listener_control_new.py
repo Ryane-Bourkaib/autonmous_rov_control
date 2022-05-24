@@ -176,12 +176,6 @@ def DoThing(msg):
 class Master:
     def __init__(self):
         
-        rospy.Subscriber("controller/surge_vel/effort", Float64MultiArray, self.surge_vel_cb)
-        rospy.Subscriber("controller/surge/effort", Float64MultiArray, self.surge_cb)
-        rospy.Subscriber("controller/yaw/effort", Float64MultiArray, self.yaw_cb)
-        rospy.Subscriber("controller/depth/effort", Float64MultiArray, self.depth_cb)
-        rospy.Subscriber("controller/sway/effort", Float64MultiArray, self.sway_cb)
-        
         self.surge_vel_setpoint_pub = rospy.Publisher(
             "controller/surge_vel/desired", Float64, queue_size=10)
         self.depth_setpoint_pub = rospy.Publisher("controller/depth/desired",Float64,queue_size=10)
@@ -200,14 +194,14 @@ class Master:
         self.yaw_pwm = 1500
         
         # Mission Thresholds
-        self.free_dist_thresh = 700
-        self.max_depth_err = 0.1
+        self.free_dist_thresh = 1000
+        self.max_depth_err = 0.2
         self.max_wall_dist_err = 100
         
         # Setpoints
-        self.depth_desired = 0.3
+        self.depth_desired = 0.0 #0.3
         self.yaw_desired = 0.0
-        self.surge_desired = 500
+        self.surge_desired = 700
         self.surge_vel_desired = 0.0
         self.surge_vel_nominal = 0.1
         self.sway_desired = 0.0
@@ -224,15 +218,28 @@ class Master:
         self.actions = {"drown": self.drown_action,
                         "go_to_wall": self.go_to_wall_action,
                         "keep_to_wall": self.keep_to_wall_action,
-                        "search": self.search_action}
+                        "search": self.search_action,
+                        "yaw":self.yaw_action,
+                        "bonus": self.bonus_action}
         
-        self.state = "drown"
+        self.state = "go_to_wall"
         
         self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
                             surge=self.surge_desired, sway=self.sway_desired)
+        
+        rospy.Subscriber("controller/surge_vel/effort",
+                         Float64MultiArray, self.surge_vel_cb)
+        rospy.Subscriber("controller/surge/effort",
+                         Float64MultiArray, self.surge_cb)
+        rospy.Subscriber("controller/yaw/effort",
+                         Float64MultiArray, self.yaw_cb)
+        rospy.Subscriber("controller/depth/effort",
+                         Float64MultiArray, self.depth_cb)
+        rospy.Subscriber("controller/sway/effort",
+                         Float64MultiArray, self.sway_cb)
 
     def surge_cb(self, msg):
-        self.surge_pwm = self.PWM_Cmd(msg.data[0])
+        self.surge_pwm = self.PWM_Cmd(msg.data[0], b=1500)
         self.surge = msg.data[1]
         self.update_state()
     
@@ -258,13 +265,13 @@ class Master:
 
     # Function used to calculate the necessary PWM for each motor
 
-    def PWM_Cmd(self, thrust_req):
+    def PWM_Cmd(self, thrust_req, b = None):
         if (thrust_req >= 0):
             m = 86.93393326839376   # Slope of the positive force linear function
-            b = 1536
+            b = 1536 if b is None else b
         else:
             m = 110.918185437553874  # Slope of the negtaive force linear function
-            b = 1464
+            b = 1464 if b is None else b
 
         PWM = int(m * thrust_req/4) + b
         if PWM > Vmax_mot:
@@ -282,7 +289,7 @@ class Master:
     
     def update_state(self):
         self.actions[self.state]()
-        
+        print(f"state = {self.state}")
         if abs(abs(self.depth) - self.depth_desired) > self.max_depth_err:
             self.state = "drown"
             return
@@ -293,24 +300,35 @@ class Master:
             return
         
         elif self.state == "go_to_wall":
+            print(f"cond = {abs(self.surge - self.surge_desired)}")
             if abs(self.surge - self.surge_desired) < self.max_wall_dist_err:
                 self.state = "keep_to_wall"
             return
         
         elif self.state == "keep_to_wall":
-            self.state = "search"
-            #self.state = "bonus"
+            # self.state = "search"
+            self.state = "bonus"
             return
         
         elif self.state == "search":
             if self.surge >= self.free_dist_thresh:
                 self.state = "go_to_wall"
-            return           
+            return
+        elif self.state == "bonus":
+            self.state = "go_to_wall"
+            return
+        elif self.state == "yaw":
+            return    
 
     def drown_action(self):
         # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
         setOverrideRCIN(1500, 1500, self.depth_pwm,
                         self.yaw_pwm, 1500, self.sway_pwm)
+    
+    def yaw_action(self):
+        # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        self.yaw_pwm, 1500, 1500)
     
     def go_to_wall_action(self):
         # Start moving forward, while keeping depth, sway, and yaw positions
@@ -319,6 +337,7 @@ class Master:
                             surge=self.surge_desired, sway=self.sway_desired,
                             surge_vel=self.surge_vel_desired)
         surge_pwm = self.surge_vel_pwm if self.use_surge_vel else self.surge_pwm
+        print(f"surge_pwm = {surge_pwm}")
         setOverrideRCIN(1500, 1500, self.depth_pwm,
                         self.yaw_pwm, surge_pwm, self.sway_pwm)
         
@@ -329,12 +348,19 @@ class Master:
                             surge=self.surge_desired, sway=self.sway_desired,
                             surge_vel=self.surge_vel_desired)
         surge_pwm = self.surge_vel_pwm if self.use_surge_vel else self.surge_pwm
+        print(f"surge_pwm = {surge_pwm}")
         setOverrideRCIN(1500, 1500, self.depth_pwm,
                         self.yaw_pwm, surge_pwm, self.sway_pwm)
     
+    def bonus_action(self):
+        # stop moving, and keep depth, yaw, surge, and sway constant.
+        surge_pwm = self.surge_vel_pwm if self.use_surge_vel else self.surge_pwm
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        self.yaw_pwm, surge_pwm, 1510)
+    
     def search_action(self):
         # Rotate in yaw while keeping depth value, no sway or surge control.
-        self.yaw_desired -= 0.5 # in degrees
+        self.yaw_desired -= 0.05 # in degrees
         if self.yaw_desired > 180:
             self.yaw_desired = self.yaw_desired - 360
         if self.yaw_desired <= -180:
@@ -356,9 +382,7 @@ if __name__ == '__main__':
 
     armDisarm(False)  # Not automatically disarmed at startup
     rospy.init_node('autonomous_MIR', anonymous=False)
-    
-    master = Master()
-    
+        
     pub_msg_override = rospy.Publisher(
         "mavros/rc/override", OverrideRCIn, queue_size=10, tcp_nodelay=True)
     pub_angle_degre = rospy.Publisher(
@@ -369,5 +393,7 @@ if __name__ == '__main__':
         'angular_velocity', Twist, queue_size=10, tcp_nodelay=True)
     pub_linear_vel = rospy.Publisher(
         'linear_velocity', Twist, queue_size=10, tcp_nodelay=True)
+    
+    master = Master()
 
     subscriber()

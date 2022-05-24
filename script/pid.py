@@ -17,7 +17,7 @@ class PID:
     def set_step(self, step):
         self.step = step
 
-    def reset_controller():
+    def reset_controller(self):
         self.prev_e = 0.0
         self.prev_i = 0.0 
 
