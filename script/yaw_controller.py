@@ -78,7 +78,10 @@ class YawController:
             e_yaw = e_yaw + 360
         if e_yaw > 180:
             e_yaw = e_yaw - 360
-            
+        
+        if dt == curr_time:
+            return
+        
         # Control:
         self.controller.set_step(dt)
         control_effort = self.controller.control(e_yaw, r)

@@ -13,19 +13,19 @@ import math
 
 from PI_Controller import*
 
-class SwayController:
+class SurgeVelController:
 
     def __init__(self):
 
         self.sensor_sub = rospy.Subscriber("/dvl/data", DVL, self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
-        self.desired_val_sub = rospy.Subscriber("controller/sway/desired", Float64, self.desired_val_callback)
+        self.desired_val_sub = rospy.Subscriber("controller/surge_vel/desired", Float64, self.desired_val_callback)
         self.pub = rospy.Publisher(
-            'controller/sway/effort', Float64MultiArray, queue_size=10)
+            'controller/surge_vel/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
 
-        self.startup_sway = 0.0
+        self.startup_surge_vel = 0.0
 
         self.step = 0.02
         self.prev_time = 0
@@ -48,9 +48,9 @@ class SwayController:
         self.desired_val = msg.data
 
     def get_params(self):
-        self.kp = rospy.get_param('controller/sway/kp', 0.0)
-        self.ki = rospy.get_param('controller/sway/ki', 0.0)
-        self.kd = rospy.get_param('controller/sway/kd', 0.0)
+        self.kp = rospy.get_param('controller/surge_vel/kp', 0.0)
+        self.ki = rospy.get_param('controller/surge_vel/ki', 0.0)
+        self.kd = rospy.get_param('controller/surge_vel/kd', 0.0)
 
     def reset_callback(self, data):
         self.v_e0 = 0
@@ -59,7 +59,7 @@ class SwayController:
         self.init = True
 
     def sensor_callback(self,data): 
-        v = data.velocity.y  # Linear velocity along y (sway) 
+        v = data.velocity.x  # Linear velocity along x (surge_vel) 
         
         # update dt
         curr_time = rospy.Time.now().to_sec()
@@ -82,8 +82,8 @@ class SwayController:
         self.pub.publish(Float64(control_effort))
 
 def main(args):
-  rospy.init_node('sway_controller_node')
-  controller = SwayController()
+  rospy.init_node('surge_vel_controller_node')
+  controller = SurgeVelController()
   try:
     rospy.spin()
   except KeyboardInterrupt:

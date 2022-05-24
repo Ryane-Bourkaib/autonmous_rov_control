@@ -18,7 +18,8 @@ class SurgeController:
         self.sensor_sub = rospy.Subscriber("distance_sonar", Float64MultiArray, self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
         self.desired_val_sub = rospy.Subscriber("controller/surge/desired", Float64, self.desired_val_callback)
-        self.pub = rospy.Publisher('controller/surge/effort', Float64, queue_size=10)
+        self.pub = rospy.Publisher(
+            'controller/surge/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
 
@@ -59,11 +60,16 @@ class SurgeController:
 
         surge = pinger_distance
         surge_error = self.desired_val - surge
+        
+        if dt == curr_time:
+            return
 
         # Control:
         self.controller.set_step(dt)
         control_effort = self.controller.control(surge_error)  #removed r
-        self.pub.publish(Float64(control_effort))
+        msg = Float64MultiArray()
+        msg.data = [control_effort, surge]
+        self.pub.publish(msg)
 
 def main(args):
   rospy.init_node('surge_controller_node')

@@ -6,6 +6,7 @@ from std_msgs.msg import Float64
 from std_msgs.msg import Float64MultiArray
 from std_msgs.msg import Empty
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import FluidPressure
 import tf
 import math
 
@@ -17,9 +18,10 @@ class DepthController:
 
     def __init__(self):
 
-        self.sensor_sub = rospy.Subscriber("mavros/imu/data",Int16,self.sensor_callback)
+        self.sensor_sub = rospy.Subscriber(
+            "mavros/imu/water_pressure", FluidPressure, self.sensor_callback)
         self.reset_sub = rospy.Subscriber("controllers/reset", Empty, self.reset_callback)
-        self.desired_val_sub = rospy.Subscriber("controllers/depth/desired", Float64, self.desired_val_callback)
+        self.desired_val_sub = rospy.Subscriber("controller/depth/desired", Float64, self.desired_val_callback)
         self.pub = rospy.Publisher('controller/depth/effort', Float64MultiArray, queue_size=10)
         
         self.init = False
@@ -73,7 +75,10 @@ class DepthController:
             # 1st execution, init
             self.depth_p0 = depth
             self.init = False
-
+        
+        if dt == curr_time:
+            return
+        
         self.depth_wrt_startup = depth - self.depth_p0
         
         # Filter:
