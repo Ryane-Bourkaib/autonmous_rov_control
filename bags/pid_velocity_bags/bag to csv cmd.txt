@@ -1,0 +1,10 @@
+
+cmd to export csv
+
+#depth
+rostopic echo -b depth_control_12v_kp_5.bag -p /br2/pid/depth/state > depth_control_12v_kp_5_Depth.csv
+
+#thrusters
+rostopic echo -b depth_control_12v_kp_5.bag -p /br2/mavros/rc/override > depth_control_12v_kp_5_Thrusters.csv
+
+rostopic echo -b depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2.bag -p /br2/pid/depth/state > depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2_Depth.csv && rostopic echo -b depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2.bag -p /br2/mavros/rc/override > depth_control_12v_kp_1.5_g_3_ki_0.005_no_wall_2_PWM.csv
