@@ -4,25 +4,28 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 ### Set your path to the folder containing the .csv files
-PATH = './' # Use your path
+# PATH = './' # Use your path
 
 ### Fetch all files in path
-fileNames = os.listdir(PATH)
+# fileNames = os.listdir(PATH)
 
 ### Filter file name list for files ending with .csv
-fileNames = [file for file in fileNames if '.csv' in file]
-file = ""
+# fileNames = [file for file in fileNames if '.csv' in file]
+# file = ""
 
-# start index
-idx = 0
-### Loop over all files
-for f in fileNames:
+# # start index
+# idx = 0
+# ### Loop over all files
+# for f in fileNames:
 
-    # if file.find("_g_") != -1:  #skip files with this sub string
-    #     continue
-    if f.find("bonus_dist") == -1:    #skip files without this sub string
-        continue
-    file = f
+#     # if file.find("_g_") != -1:  #skip files with this sub string
+#     #     continue
+#     if f.find("bonus_dist") == 1:    #skip files without this sub string
+#         file = f
+#         break
+
+file = 'bonus_dist.csv'
+PATH = ''
 
 ### Read .csv file and append to list
 df_d = pd.read_csv(PATH + file, index_col = None)
