@@ -61,8 +61,8 @@ def skew_vec (vec):
 
 # expressed a velocity in frame a knowing velocity in b an
 # change of frame aMb
-def velocityTwistMatrix(tx,ty,tz,rx,ry,rz):
-    aRb = rotXYZ(rx,ry,rz, degrees=True)
+def velocityTwistMatrix(tx,ty,tz,rx=0,ry=0,rz=0, aRb=None):
+    aRb = rotXYZ(rx,ry,rz, degrees=True) if aRb is None else aRb
     aTb_x = skew_vec(np.array([tx,ty,tz]))
     aTb_xaRb = aTb_x.dot(aRb)
     aVb1 = np.concatenate((aRb,aTb_xaRb),axis=1)

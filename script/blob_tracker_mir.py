@@ -197,7 +197,7 @@ def cameracallback(image_data):
         flag_alert = True
         
     if (flag_alert == True ):
-        #print "Alert ! Tracking failed ! Left click to reset tracking points"
+        ## print "Alert ! Tracking failed ! Left click to reset tracking points"
         position = (10,410) 
         text = "Alert ! Tracking failed ! Left click to reset tracking points" 
         cv2.putText(blobs,text,position,
@@ -224,7 +224,7 @@ def cameracallback(image_data):
     #rospy.loginfo(current_point_msg)
 
     if(np.shape(ordered_points)[0] == n_points and flag_alert==False):
-       # print "publish points"
+       # # print "publish points"
         if(reset_desired_points) : 
             desired_points = ordered_points
             reset_desired_points = False
@@ -254,7 +254,7 @@ def click_detect(event,x, y, flags, param):
 
 def subscriber():
     #camera
-    rospy.Subscriber("/br5/usb_cam/image_raw/compressed", CompressedImage, cameracallback,  queue_size = 1)
+    rospy.Subscriber("usb_cam/image_raw/compressed", CompressedImage, cameracallback,  queue_size = 1)
     rospy.spin()  # Execute subscriber in loop
 
 

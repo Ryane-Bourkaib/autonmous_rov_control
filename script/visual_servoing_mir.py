@@ -47,7 +47,7 @@ global lambda_vs
 global n_points_vs
 
 vcam_vs = np.array([0,0,0,0,0,0])
-lambda_vs = 0.5
+lambda_vs = 0.1
 n_points_vs = 8
 desired_points_vs = []
 enable_vs = 0   
@@ -99,6 +99,8 @@ def trackercallback(data):
     
     # if we have current_points of same size as desired_points
     # then we can compute control law
+    print("n_d_points = ", len(desired_points_vs))
+    print("n_c_points = ", len(current_points))
     if(len(current_points)>0 and 
        len(desired_points_vs) == len(current_points)):
         
@@ -108,7 +110,7 @@ def trackercallback(data):
         
         #compute vs error
         error_vs = np.zeros((1,16))
-        # error_vs = ......
+        error_vs = current_points_meter - desired_points_meter
        
         #compute interaction matrix in the FILE ./visual_servoig.py
         L = vs.interactionMatrixFeaturePoint2DList(current_points_meter)
@@ -119,7 +121,7 @@ def trackercallback(data):
         #init the camera velocity
         vcam = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
         #TODO compute the velocity control law 
-        # vcam_vs = ......
+        vcam_vs = -lambda_vs * np.linalg.pinv(L).dot(error_vs)
         
         ## Find the relative robot/camera position
         ## You can train in the file testTransform.py
@@ -135,7 +137,14 @@ def trackercallback(data):
         vrobot = np.array([0.0,0.0,0.0,0.0,0.0,0.0])
         
         ## TODO find the control velocity expressed in the robot frame
-        ## vrobot = .........(vcam_vs)
+        cam_to_rob_t = np.array([0.15, 0, 0])
+        cam_to_rob_r = np.array([[0, 0, 1],
+                                 [1, 0, 0],
+                                 [0, 1, 0]])
+        twist_matrix = velocityTwistMatrix(cam_to_rob_t[0], cam_to_rob_t[1], cam_to_rob_t[2],
+                                           aRb=cam_to_rob_r)
+        #print("pretty_boy_twist  = ", twist_matrix)
+        vrobot = twist_matrix.dot(vcam_vs)
     
         print('Then vrobot =  ', vrobot)
     
@@ -468,7 +477,7 @@ if __name__ == '__main__':
 
     armDisarm(False)  # Not automatically disarmed at startup
     rospy.init_node('visual_servoing_mir', anonymous=False)
-    print "visual servoing mir launched"
+    print ("visual servoing mir launched")
     #armDisarm(False)  # Not automatically disarmed at startup
     pub_msg_override = rospy.Publisher("mavros/rc/override", OverrideRCIn, queue_size = 10, tcp_nodelay = True)
     pub_angle_degre = rospy.Publisher('angle_degree', Twist, queue_size = 10, tcp_nodelay = True)

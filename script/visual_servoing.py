@@ -25,9 +25,10 @@ def interactionMatrixFeaturePoint2D(x,y,Z=1):
 
 
 #the stack of interactionMatrices for list of points
-def interactionMatrixFeaturePoint2DList(points):
+def interactionMatrixFeaturePoint2DList(points, Zs=None):
     n = int(np.shape(points)[0]/2)
-    if(len(Zs)!=n):
+    #if(len(Zs)!=n):
+    if Zs is None:
        Zs = np.ones(n)
         
     iter = 0 

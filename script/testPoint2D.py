@@ -26,32 +26,32 @@ for i in range(0,nb_pts):
 
 #copy the points and shuffle them
 previous_pts = current_pts[:]#+ 0.01*np.ones(np.shape(current_pts)) 
-print "begin"
-print "current_pts",current_pts
-print "previous_pts",previous_pts 
+# print "begin"
+# print "current_pts",current_pts
+# print "previous_pts",previous_pts 
 
 
 print previous_pts
 random.shuffle(previous_pts)
-print "after shuffle"
-print "current_pts",current_pts
-print "previous_pts",previous_pts 
+# print "after shuffle"
+# print "current_pts",current_pts
+# print "previous_pts",previous_pts 
 
 #previous_pts += 0.01*np.ones(np.shape(previous_pts)) 
 previous_pts += 2*np.random.rand(nb_pts,2)-1
 
-print "after noise"
-print "current_pts",current_pts
-print "previous_pts",previous_pts 
+# print "after noise"
+# print "current_pts",current_pts
+# print "previous_pts",previous_pts 
 
 
 
 ordered_pts =  order_point(previous_pts, current_pts)
 
-print "ordered"
-print "current_pts",current_pts
-print "previous_pts",previous_pts  
-print "ordered_pts",ordered_pts
+# print "ordered"
+# print "current_pts",current_pts
+# print "previous_pts",previous_pts  
+# print "ordered_pts",ordered_pts
 
 plt.figure(1)
 plt.plot(np.array(current_pts)[:,0],np.array(current_pts)[:,1],'ro')
