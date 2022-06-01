@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   mavros
   message_generation
   dynamic_reconfigure
-  waterlinked_a50_ros_driver
 )
 
 ## System dependencies are found with CMake's conventions
@@ -229,5 +228,5 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 add_executable(teleop_xbox src/teleop_xbox.cpp)
 target_link_libraries(teleop_xbox ${catkin_LIBRARIES})
 add_dependencies(teleop_xbox ${PROJECT_NAME}_gencfg ${catkin_EXPORTED_TARGETS})
-set_target_properties(teleop_xbox PROPERTIES LINKER_LANGUAGE CXX)
+#set_target_properties(teleop_xbox PROPERTIES LINKER_LANGUAGE CXX)
 

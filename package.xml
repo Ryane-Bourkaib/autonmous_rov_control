@@ -64,7 +64,6 @@
   <build_depend>joy</build_depend>
   <build_depend>mavros</build_depend>
   <build_depend>message_generation</build_depend>
-  <build_depend>waterlinked_a50_ros_driver</build_depend>
 
   <exec_depend>message_runtime</exec_depend>
 

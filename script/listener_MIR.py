@@ -15,13 +15,12 @@ from std_msgs.msg import String
 from mavros_msgs.msg import OverrideRCIn
 from sensor_msgs.msg import Joy
 from sensor_msgs.msg import Imu
-from waterlinked_a50_ros_driver.msg import DVL
-from waterlinked_a50_ros_driver.msg import DVLBeam
+#from waterlinked_a50_ros_driver.msg import DVL
+#from waterlinked_a50_ros_driver.msg import DVLBeam
 from sensor_msgs.msg import FluidPressure
 from sensor_msgs.msg import LaserScan
 from mavros_msgs.srv import CommandLong
 from geometry_msgs.msg import Twist
-from brping import Ping1D
 import time
 import sys
 import argparse
@@ -348,7 +347,7 @@ def subscriber():
     rospy.Subscriber("cmd_vel", Twist, velCallback)
     rospy.Subscriber("mavros/imu/data", Imu, OdoCallback)
     rospy.Subscriber("mavros/imu/water_pressure", FluidPressure, PressureCallback)
-    rospy.Subscriber("/dvl/data", DVL, DvlCallback)
+    # rospy.Subscriber("/dvl/data", DVL, DvlCallback)
     rospy.Subscriber("distance_sonar", Float64MultiArray, pingerCallback)
     rospy.spin()  # Execute subscriber in loop
 
