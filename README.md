@@ -38,40 +38,82 @@ source your catkin workspace :
 ### Test 
 
 #### test it on a bag
+
+Set the env variable in you bashrc
+
+```
+ gedit ~\.bashrc
+```
+And edit those lines
+
+export ROS_MASTER_URI=http://127.0.0.1:11311
+export ROS_HOSTNAME=127.0.0.1
+export ROS_IP=127.0.0.1
+
 1. open a new terminal and run the bag testtracking.bag with loop option so that it never stops publishing
-  ```
+
+```
   cd ~/catkin_w/src/autonomous_rov/bags
   rosbag play -l  testtracking.bag
-  ```
-  
-2. run the launch file
-   ```
+```
+
+3. open a terminal and run a roscore
+
+```
    roslaunch autonomous_rov run_visual_servoing.launch
-   ```
-   
-3. look at the topic : you should see two new topics : 
-  - /br5/tracked_points de type std_msgs/Float64MultiArray
-  - /br5/desired_points de type std_msgs/Float64MultiArray
+```
+
+4. open another terminal and run the launch file
+```
+   roslaunch autonomous_rov run_visual_servoing.launch
+```
+
+5. look at the topic : you should see two new topics : 
+  - /br5/tracked_points of type std_msgs/Float64MultiArray
+  - /br5/desired_points of type std_msgs/Float64MultiArray
 They are published by the node blob_tracker_mir.py. They contained the point position in the image in pixels : \[u1,v1,u2,v2,u3,v3,....,uN, vN\]
 They are listened in the node visual_servoing_mir.py.
  
 #### Real robot application
-You have to change the group name in the launch file to adapt it to your robot topic
-1. Open the file run_visual_servoing_launch
+
+1. Set your network to 
+```
+IPv4 to be adress = 192.168.254.15 Netmask = 255.255.255.0 Gateway = [empty]
+```
+**Be carreful that your firewall is off**
+
+2. Set the env variable in you bashrc 
+```
+ gedit ~\.bashrc
+```
+And edit those lines
+```
+export ROS_MASTER_URI=http://192.168.254.15:11311
+export ROS_HOSTNAME=192.168.254.15
+export ROS_IP=192.168.254.15
+```
+
+3. You have to change the group name in the launch file to adapt it to your robot topic. 
+
+Open the file run_visual_servoing.launch
 ```
   gedit ~/catkin_ws/src/autonomous_rov/launch/run_visual_servoing.launch
  ``` 
-2. Change Line 11 with your rov number. Replace br5 with br1 , br2 , br3 or br4 ...
-  ```
+Change Line 11 with your rov number. Replace br5 with br1 , br2 , br3 or br4 ...
+```
   line 11 <group ns="br5">
 ```
-3. run the launch file
-   ```
+4. open a terminal and run a roscore
+```
    roslaunch autonomous_rov run_visual_servoing.launch
-   ```
-4. 3. look at the topic : you should see two new topics : 
-  - /br5/tracked_points de type std_msgs/Float64MultiArray
-  - /br5/desired_points de type std_msgs/Float64MultiArray
+```
+5. open another terminal and run the launch file
+```
+   roslaunch autonomous_rov run_visual_servoing.launch
+```
+6. look at the topic : you should see two new topics : 
+  - /br5/tracked_points of type std_msgs/Float64MultiArray
+  - /br5/desired_points of  type std_msgs/Float64MultiArray
 They are published by the node blob_tracker_mir.py. They contained the point position in the image in pixels : \[u1,v1,u2,v2,u3,v3,....,uN, vN\]
 They are listened in the node visual_servoing_mir.py.
 

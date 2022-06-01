@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
 <launch>
+
   <!-- roscore automatically started by roslaunch -->
 
   <!-- start mavlink node -->
@@ -16,16 +17,19 @@
     <!-- start telexbox to convert joystick values into vel -->
     <node pkg="autonomous_rov" type="teleop_xbox" name="teleop_xbox" output="screen">
     </node>  
-    
+
     <arg name="arg1" default="--device /dev/ttyUSB0"/>  
 
-    <node respawn="true" pkg="autonomous_rov" type="blob_tracker_mir.py" name="blob_tracker_mir" output="screen" ></node>
+    <node pkg="autonomous_rov" type="blob_tracker_mir.py" name="blob_tracker_mir" output="screen" ></node>
     
-    <node respawn="true" pkg="autonomous_rov" type="visual_servoing_mir.py" name="visual_servoing_mir" output="screen" ></node>
-
+    <node pkg="autonomous_rov" type="visual_servoing_mir.py" name="visual_servoing_mir" output="screen" ></node> 
   </group>
 
 </launch>
+   
+   
+
+
    
    
 

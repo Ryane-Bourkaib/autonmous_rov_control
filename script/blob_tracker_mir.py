@@ -26,7 +26,6 @@ from geometry_msgs.msg import Twist
 ###---- Visual Tracking and Servoing----
 from sensor_msgs.msg import CompressedImage
 import cv2
-from Point2D import Point2D
 
 
 import time
@@ -52,14 +51,6 @@ reset_previous_points = True
 desired_points = []
 flag_alert = False
 
-#camera parameters
-u0 = 341
-v0 = 258
-lx = 455
-ly = 455
-kud =0.00683 
-kdu = -0.01424 
-
 
 def order_point(previous_pts, current_pts):
     
@@ -74,22 +65,6 @@ def order_point(previous_pts, current_pts):
     return ordered_pts
 
 
-def convert2meter(pt,u0,v0,lx,ly):
-    return (pt[0]-u0)/lx, (pt[1]-v0)/ly
-    
-
-
-global desired_points2D
-#defined desired points 
-desired_points2D = [Point2D(-0.243369710525,-0.418902983183),
-                  Point2D(-0.0143862444929,-0.429675544624),
-                  Point2D(-0.096243540171,-0.352463371199),
-                  Point2D(-0.237090345635,-0.291995145385),
-                  Point2D(-0.156886982784,-0.189359449174),
-                  Point2D(-0.00989097068426,-0.148452126201),
-                  Point2D(-0.00165708972955,-0.0341907266445),
-                  Point2D(-0.224742039631,-0.0227008870907)]
-    
 vcam_vs = np.array([0,0,0,0,0,0])
 lambda_vs = 0.5
 
@@ -198,7 +173,7 @@ def cameracallback(image_data):
         desired_points = current_points
         reset_previous_points = False
         flag_alert = False
-        print("previous_points updated")
+        print ("previous_points updated")
     
     
     # order_point
@@ -253,7 +228,7 @@ def cameracallback(image_data):
         if(reset_desired_points) : 
             desired_points = ordered_points
             reset_desired_points = False
-            print("desired_points updated")
+            print ("desired_points updated")
         pub_tracked_point.publish(current_point_msg)
         desired_points_reshaped = np.array(desired_points).reshape(-1)
         desired_points_msg = Float64MultiArray(data = desired_points_reshaped)
@@ -269,11 +244,11 @@ def click_detect(event,x, y, flags, param):
     
     if event == cv2.EVENT_RBUTTONDOWN:
         reset_desired_points = True
-        print("desired_points to update")
+        print ("desired_points to update")
     
     if event == cv2.EVENT_LBUTTONDOWN:
         reset_previous_points = True
-        print("previous_points to update")
+        print ("previous_points to update")
 
 
 
@@ -287,7 +262,7 @@ if __name__ == '__main__':
 
     rospy.init_node('blob_tracker_mir', anonymous=False)  
     
-    print('tracker launched')
+    print ('tracker launched')
     
     pub_tracked_point = rospy.Publisher("tracked_points",Float64MultiArray,queue_size=1,tcp_nodelay = True)
     pub_desired_point = rospy.Publisher("desired_points",Float64MultiArray,queue_size=1,tcp_nodelay = True)
