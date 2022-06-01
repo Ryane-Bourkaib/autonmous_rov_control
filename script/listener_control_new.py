@@ -30,19 +30,165 @@ from PI_Controller import*
 import time
 import sys
 import argparse
+###---- Visual Tracking and Servoing----
+from transform import velocityTwistMatrix
+from transform import homogenousMatrix
+import visual_servoing as vs
+import camera_parameters as cam
 
 
 # ---------- Global Variables ---------------
 
 set_mode = [0]*3
-Vmax_mot = 1900
-Vmin_mot = 1100
+# Vmax_mot = 1900
+# Vmin_mot = 1100
+
+Vmax_mot = 1600
+Vmin_mot = 1400
 
 # Conditions
 arming = False
 set_mode[0] = True   # Mode manual
 set_mode[1] = False  # Mode automatic without correction
 set_mode[2] = False  # Mode with correction
+
+# visual servoing
+global desired_points_vs
+global vcam_vs
+global lambda_vs
+global n_points_vs
+
+vcam_vs = np.array([0, 0, 0, 0, 0, 0])
+lambda_vs = np.array([0.5,
+                      0.5,
+                      0.5,
+                      0.25,
+                      0.5,
+                      0.1])  # yaw
+n_points_vs = 8
+desired_points_vs = []
+enable_vs = 0
+
+
+set_mode = [0]*3
+
+roll_left_right = 1500
+yaw_left_right = 1500
+ascend_descend = 1500
+forward_reverse = 1500
+lateral_left_right = 1500
+pitch_left_right = 1500
+
+
+def trackercallback(data):
+    global desired_points_vs
+    global n_points_vs
+    global roll_left_right
+    global yaw_left_right
+    global ascend_descend
+    global forward_reverse
+    global lateral_left_right
+    global pitch_left_right
+
+    # read the current tracked point
+    current_points = data.data
+
+    # if we have current_points of same size as desired_points
+    # then we can compute control law
+    print("n_d_points = ", len(desired_points_vs))
+    print("n_c_points = ", len(current_points))
+    if(len(current_points) > 0 and
+       len(desired_points_vs) == len(current_points)):
+
+        #convert points from pixels to meters
+        current_points_meter = cam.convertListPoint2meter(current_points)
+        desired_points_meter = cam.convertListPoint2meter(desired_points_vs)
+
+        #compute vs error
+        error_vs = np.zeros((1, 16))
+        error_vs = current_points_meter - desired_points_meter
+
+        #compute interaction matrix in the FILE ./visual_servoig.py
+        L = vs.interactionMatrixFeaturePoint2DList(current_points_meter)
+        # TODO once it works with this matrix, change it for
+        # 1. a rho tetha representation
+        # 2. a segment representation
+
+        #init the camera velocity
+        vcam = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        #TODO compute the velocity control law
+        vcam_vs = -lambda_vs * np.linalg.pinv(L).dot(error_vs)
+
+        ## Find the relative robot/camera position
+        ## You can train in the file testTransform.py
+        ## robot frame        |  camera frame
+        ##                    |
+        ##    ------> x       |  -----> z
+        ##    |               |  |
+        ##    |               |  |
+        ##    v z             |  v y
+        ##                    |
+
+        print('Visual servoing : vcam =', vcam_vs)
+        vrobot = np.array([0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+
+        ## TODO find the control velocity expressed in the robot frame
+        cam_to_rob_t = np.array([0.15, 0, 0])
+        cam_to_rob_r = np.array([[0, 0, 1],
+                                 [1, 0, 0],
+                                 [0, 1, 0]])
+        twist_matrix = velocityTwistMatrix(cam_to_rob_t[0], cam_to_rob_t[1], cam_to_rob_t[2],
+                                           aRb=cam_to_rob_r)
+        #print("pretty_boy_twist  = ", twist_matrix)
+        vrobot = twist_matrix.dot(vcam_vs)
+
+        print('Then vrobot =  ', vrobot)
+
+        vel = Twist()
+        vel.angular.x = vrobot[3]
+        vel.angular.y = vrobot[4]
+        vel.angular.z = vrobot[5]
+        vel.linear.x = vrobot[0]
+        vel.linear.y = vrobot[1]
+        vel.linear.z = vrobot[2]
+        # publish the visual servoing velocity
+        pub_visual_servoing_vel.publish(vel)
+
+        # publish the error
+        error_vs_msg = Float64MultiArray(data=error_vs)
+        pub_visual_servoing_err.publish(error_vs_msg)
+
+        print("press A to launch the visual servoing control")
+        if (set_mode[2]):
+
+            # Extract cmd_vel message
+            # FIXME be carreful of the sign may depends on your robot
+            roll_left_right = mapValueScalSat(vel.angular.x)
+            yaw_left_right = mapValueScalSat(vel.angular.z)#-1
+            # yaw_left_right = map_vel_yaw(vel.angular.z)
+            # ascend_descend = mapValueScalSat(-1*vel.linear.z) # controlled by pressure
+            forward_reverse = mapValueScalSat(vel.linear.x)
+            lateral_left_right = mapValueScalSat(vel.linear.y)#-1
+            pitch_left_right = mapValueScalSat(vel.angular.y)#1
+            roll_left_right = 1500
+            # yaw_left_right = 1500
+            # ascend_descend = 1500
+            # forward_reverse = 1500
+            pitch_left_right = 1500
+            # lateral_left_right = 1500
+            print("pwms = ", pitch_left_right, roll_left_right, ascend_descend,
+                                    yaw_left_right, forward_reverse, lateral_left_right)
+            
+            setOverrideRCIN(pitch_left_right, roll_left_right, ascend_descend,
+                            yaw_left_right, forward_reverse, lateral_left_right)
+
+
+def desiredpointscallback(data):
+   # print( "desired point callback")
+    global desired_points_vs
+    desired_points_vs = data.data
+
+
 
 
 def joyCallback(data):
@@ -123,6 +269,26 @@ def velCallback(cmd_vel):
     setOverrideRCIN(pitch_left_right, roll_left_right, ascend_descend,
                     yaw_left_right, forward_reverse, lateral_left_right)
 
+def map_vel_yaw(value, b=None):
+    global Vmax_mot
+    global Vmin_mot
+    if (value >= 0):
+        m = 400   # Slope of the positive force linear function
+        b = 1536 if b is None else b
+    else:
+        m = 400  # Slope of the negtaive force linear function
+        b = 1464 if b is None else b
+        
+    pulse_width = value * m + b
+
+    # On limite la commande en vitesse
+    if pulse_width > Vmax_mot:
+        pulse_width = Vmax_mot
+    if pulse_width < Vmin_mot:
+        pulse_width = Vmin_mot
+    
+    return pulse_width
+    
 
 def mapValueScalSat(value):
     global Vmax_mot
@@ -182,9 +348,13 @@ class Master:
         self.yaw_setpoint_pub = rospy.Publisher("controller/yaw/desired",Float64,queue_size=10)
         self.surge_setpoint_pub = rospy.Publisher("controller/surge/desired",Float64,queue_size=10)
         self.sway_setpoint_pub = rospy.Publisher("controller/sway/desired", Float64, queue_size=10)
+        self.pitch_setpoint_pub = rospy.Publisher(
+            "controller/pitch/desired", Float64, queue_size=10)
+
 
         # Surge Mode (vel from dvl vs Pos from pinger)
         self.use_surge_vel = False
+        self.drowned = False
         
         # PWMs
         self.surge_vel_pwm = 1500
@@ -195,12 +365,13 @@ class Master:
         
         # Mission Thresholds
         self.free_dist_thresh = 1000
-        self.max_depth_err = 0.2
+        self.max_depth_err = 0.4
         self.max_wall_dist_err = 100
         
         # Setpoints
-        self.depth_desired = 0.0 #0.3
+        self.depth_desired = 0.5 #0.3
         self.yaw_desired = 0.0
+        self.pitch_desired = 0.0
         self.surge_desired = 700
         self.surge_vel_desired = 0.0
         self.surge_vel_nominal = 0.1
@@ -210,6 +381,7 @@ class Master:
         self.surge = 0
         self.surge_vel = 0
         self.yaw = 0
+        self.pitch = 0
         self.sway = 0
         self.depth = 0
         
@@ -220,12 +392,14 @@ class Master:
                         "keep_to_wall": self.keep_to_wall_action,
                         "search": self.search_action,
                         "yaw":self.yaw_action,
-                        "bonus": self.bonus_action}
+                        "bonus": self.bonus_action,
+                        "drown_vs": self.drown_vs_action,
+                        "vs": self.vs_action}
         
-        self.state = "go_to_wall"
+        self.state = "drown_vs"
         
         self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
-                            surge=self.surge_desired, sway=self.sway_desired)
+                            surge=self.surge_desired, sway=self.sway_desired, pitch=self.pitch_desired)
         
         rospy.Subscriber("controller/surge_vel/effort",
                          Float64MultiArray, self.surge_vel_cb)
@@ -233,6 +407,8 @@ class Master:
                          Float64MultiArray, self.surge_cb)
         rospy.Subscriber("controller/yaw/effort",
                          Float64MultiArray, self.yaw_cb)
+        rospy.Subscriber("controller/pitch/effort",
+                         Float64MultiArray, self.pitch_cb)
         rospy.Subscriber("controller/depth/effort",
                          Float64MultiArray, self.depth_cb)
         rospy.Subscriber("controller/sway/effort",
@@ -252,9 +428,18 @@ class Master:
         self.yaw_pwm = self.PWM_Cmd(msg.data[0])
         self.yaw = msg.data[1]
         self.update_state()
+    
+    def pitch_cb(self,msg):
+        # global pitch_left_right
+        self.pitch_pwm = self.PWM_Cmd(msg.data[0], b=1500)
+        self.pitch = msg.data[1]
+        # pitch_left_right = self.pitch_pwm
+        self.update_state()
 
     def depth_cb(self, msg):
+        global ascend_descend
         self.depth_pwm = self.PWM_Cmd(msg.data[0])
+        ascend_descend = self.depth_pwm
         self.depth = msg.data[1]
         self.update_state()
 
@@ -280,20 +465,26 @@ class Master:
             PWM = Vmin_mot
         return PWM
 
-    def send_setpoints(self, depth, yaw, surge, sway, surge_vel=0):
+    def send_setpoints(self, depth, yaw, surge, sway,pitch=0, surge_vel=0):
         self.surge_vel_setpoint_pub.publish(Float64(surge_vel))
         self.depth_setpoint_pub.publish(Float64(depth))
         self.yaw_setpoint_pub.publish(Float64(yaw))
         self.surge_setpoint_pub.publish(Float64(surge))
         self.sway_setpoint_pub.publish(Float64(sway))
+        self.pitch_setpoint_pub.publish(Float64(pitch))
     
     def update_state(self):
         self.actions[self.state]()
-        print(f"state = {self.state}")
-        if abs(abs(self.depth) - self.depth_desired) > self.max_depth_err:
-            self.state = "drown"
+        # print(f"state = {self.state}")
+        if abs(abs(self.depth) - self.depth_desired) > self.max_depth_err and not self.drowned:
+            # self.state = "drown"
+            self.state = "drown_vs"
             return
-        
+        elif self.state == "drown_vs":
+            self.state = "vs"
+            # self.drowned = True
+            return
+
         elif self.state == "drown":
             # if abs(abs(self.depth) - self.depth_desired) <= self.max_depth_err:
             self.state = "go_to_wall"
@@ -324,6 +515,22 @@ class Master:
         # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
         setOverrideRCIN(1500, 1500, self.depth_pwm,
                         self.yaw_pwm, 1500, self.sway_pwm)
+    
+    def drown_vs_action(self):
+        # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
+        setOverrideRCIN(1500, 1500, self.depth_pwm,
+                        1500, 1500, 1500)
+    
+    def vs_action(self):
+        global roll_left_right
+        global yaw_left_right
+        global ascend_descend
+        global forward_reverse
+        global lateral_left_right
+        global pitch_left_right
+        # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
+        setOverrideRCIN(pitch_left_right, roll_left_right, ascend_descend,
+                        yaw_left_right, forward_reverse, lateral_left_right)
     
     def yaw_action(self):
         # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
@@ -374,7 +581,9 @@ def subscriber():
     rospy.Subscriber("joy", Joy, joyCallback)
     rospy.Subscriber("cmd_vel", Twist, velCallback)
     rospy.Subscriber("do/thing", Int16, DoThing)
-
+    #camera
+    rospy.Subscriber("tracked_points",Float64MultiArray,trackercallback, queue_size=1)
+    rospy.Subscriber("desired_points",Float64MultiArray,desiredpointscallback, queue_size=1)
     rospy.spin()  # Execute subscriber in loop
 
 
@@ -393,6 +602,10 @@ if __name__ == '__main__':
         'angular_velocity', Twist, queue_size=10, tcp_nodelay=True)
     pub_linear_vel = rospy.Publisher(
         'linear_velocity', Twist, queue_size=10, tcp_nodelay=True)
+    
+    pub_visual_servoing_vel = rospy.Publisher('visual_servoing_velocity', Twist, queue_size = 10, tcp_nodelay = True)
+    pub_visual_servoing_err = rospy.Publisher("visual_servoing_error",Float64MultiArray,queue_size=1,tcp_nodelay = True)
+
     
     master = Master()
 
