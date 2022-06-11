@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- roscore automatically started by roslaunch -->
+
+  <!-- start mavlink node -->
+  <!-- px4.launch already run by ROV -->
+  <!-- <include file="$(find bluerov)/launch/apm.launch" /> -->
+
+  <!-- start joy_node -->
+    <group ns="br4"> 
+    <arg name="ns" default="br4"/>
+    <node respawn="true" pkg="joy" type="joy_node" name="joy_node" output="screen">
+      <param name="dev" value="/dev/input/js0" type="string"/>
+    </node> 
+
+    <!-- start telexbox to convert joystick values into vel -->
+    <node pkg="autonomous_rov" type="teleop_xbox" name="teleop_xbox" output="screen">
+    </node>  
+
+    <arg name="arg1" default="--device /dev/ttyUSB0"/>  
+
+    <node pkg="autonomous_rov" type="blob_tracker_mir.py" name="blob_tracker_mir" output="screen" ></node>
+    
+    <node pkg="autonomous_rov" type="visual_servoing_mir.py" name="visual_servoing_mir" output="screen" ></node> 
+  </group>
+
+</launch>
+   
+   
+
+
+   
+   
+
+
+
+

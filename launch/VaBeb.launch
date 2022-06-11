@@ -26,11 +26,6 @@
     <!-- controller velocity (surge = 0/heave = 1/yaw = 2)-->
      <arg name="controller_label" default= "0"/>
      
-    <!-- surge -->
-     <arg name="g" value= "0"/>
-     <arg name="Kp_x" value= "0.06"/>
-     <arg name="Ki_x" value= "0.1"/>
-     <arg name="Kd_x" value= "0.0"/>
     <!-- Pinger Distance -->
     <param name="controller/surge/kp" value= "0.5"/>
     <param name="controller/surge/ki" value= "0.0"/>
@@ -54,28 +49,15 @@
      <param name="controller/yaw/kd" value= "0"/>
 
     <node respawn="true" pkg="autonomous_rov" type="yaw_controller.py" name="yaw_controller" output="screen">
-     <param name="controller/yaw/kp" value= "0.085"/>
-     <param name="controller/yaw/ki" value= "0"/>
-     <param name="controller/yaw/kd" value= "0.1"/>
     </node>
 
     <node respawn="true" pkg="autonomous_rov" type="depth_controller.py" name="depth_controller" output="screen">
-     <param name="controller/depth/g" value= "0"/>
-     <param name="controller/depth/kp" value= "5"/>
-     <param name="controller/depth/ki" value= "0"/>
-     <param name="controller/depth/kd" value= "0"/>
     </node>
     
     <node respawn="true" pkg="autonomous_rov" type="surge_controller.py" name="surge_controller" output="screen">
-      <param name="controller/surge/kp" value= "0.06"/>
-      <param name="controller/surge/ki" value= "0.0"/>
-      <param name="controller/surge/kd" value= "0.0"/>
     </node>
     
     <node respawn="true" pkg="autonomous_rov" type="sway_controller.py" name="sway_controller" output="screen">
-      <param name="controller/sway/kp" value= "0.006"/>
-      <param name="controller/sway/ki" value= "0.0"/>
-      <param name="controller/sway/kd" value= "0.02"/>
     </node>
 
     <!-- <node respawn="true" pkg="autonomous_rov" type="surge_vel_controller.py" name="surge_vel_controller" output="screen">

@@ -18,7 +18,6 @@ find_package(catkin REQUIRED COMPONENTS
   mavros
   message_generation
   dynamic_reconfigure
-  waterlinked_a50_ros_driver
 )
 
 ## System dependencies are found with CMake's conventions
