@@ -22,3 +22,9 @@ ping
 rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/distance_sonar/data > ObsAvoid_dist.csv;
 rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/mavros/imu/data/orientation > ObsAvoid_imu.csv;
 rostopic echo -b obstacle_avoidance__2022-05-24-11-43-15.bag -p /br4/mavros/rc/override > ObsAvoid_thrusters.csv
+
+#######
+visual_servoing
+/br4/visual_servoing_error__Plot
+rostopic echo -b surge_yaw_sway__2022-06-01-16-06-20.bag -p /br4/visual_servoing_error > surge_sway_servoing_error.csv
+rostopic echo -b vx_vy_wz_from_vs_vz_from_pressure__2022-06-01-16-24-21.bag -p /br4/visual_servoing_error > vx_vy_wz_servoing_error.csv
