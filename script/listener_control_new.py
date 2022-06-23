@@ -69,9 +69,6 @@ n_points_vs = 8
 desired_points_vs = []
 enable_vs = 0
 
-
-set_mode = [0]*3
-
 roll_left_right = 1500
 yaw_left_right = 1500
 ascend_descend = 1500
