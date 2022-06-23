@@ -471,7 +471,8 @@ class Master:
         self.pitch_setpoint_pub.publish(Float64(pitch))
     
     def update_state(self):
-        self.actions[self.state]()
+        if set_mode[2]:
+            self.actions[self.state]()
         # print(f"state = {self.state}")
         if abs(abs(self.depth) - self.depth_desired) > self.max_depth_err and not self.drowned:
             # self.state = "drown"
