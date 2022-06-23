@@ -256,12 +256,12 @@ def velCallback(cmd_vel):
         return
 
     # Extract cmd_vel message
-    roll_left_right = mapValueScalSat(cmd_vel.angular.x)
-    yaw_left_right = mapValueScalSat(-cmd_vel.angular.z)
-    ascend_descend = mapValueScalSat(cmd_vel.linear.z)
-    forward_reverse = mapValueScalSat(cmd_vel.linear.x)
-    lateral_left_right = mapValueScalSat(-cmd_vel.linear.y)
-    pitch_left_right = mapValueScalSat(cmd_vel.angular.y)
+    roll_left_right = mapValueScalSat(-cmd_vel.angular.x)
+    yaw_left_right = mapValueScalSat(cmd_vel.angular.z)
+    ascend_descend = mapValueScalSat(-cmd_vel.linear.z)
+    forward_reverse = mapValueScalSat(-cmd_vel.linear.x)
+    lateral_left_right = mapValueScalSat(cmd_vel.linear.y)
+    pitch_left_right = mapValueScalSat(-cmd_vel.angular.y)
 
     setOverrideRCIN(pitch_left_right, roll_left_right, ascend_descend,
                     yaw_left_right, forward_reverse, lateral_left_right)
@@ -362,11 +362,11 @@ class Master:
         
         # Mission Thresholds
         self.free_dist_thresh = 1000
-        self.max_depth_err = 0.4
+        self.max_depth_err = 0.1
         self.max_wall_dist_err = 100
         
         # Setpoints
-        self.depth_desired = 0.5 #0.3
+        self.depth_desired = 0.3 #0.3
         self.yaw_desired = 0.0
         self.pitch_desired = 0.0
         self.surge_desired = 700
@@ -394,6 +394,8 @@ class Master:
                         "vs": self.vs_action}
         
         self.state = "drown_vs"
+        
+        rospy.sleep(2)
         
         self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
                             surge=self.surge_desired, sway=self.sway_desired, pitch=self.pitch_desired)
@@ -473,7 +475,7 @@ class Master:
     def update_state(self):
         if set_mode[2]:
             self.actions[self.state]()
-        # print(f"state = {self.state}")
+            # print(f"state = {self.state}")
         if abs(abs(self.depth) - self.depth_desired) > self.max_depth_err and not self.drowned:
             # self.state = "drown"
             self.state = "drown_vs"
@@ -516,6 +518,7 @@ class Master:
     
     def drown_vs_action(self):
         # Correct sway, yaw, and depth, but not surge distance, keep rov in a vertical column
+        # print(self.depth_pwm)
         setOverrideRCIN(1500, 1500, self.depth_pwm,
                         1500, 1500, 1500)
     

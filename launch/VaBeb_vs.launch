@@ -39,8 +39,8 @@
      <param name="controller/surge_vel/ki" value= "0.0"/>
      <param name="controller/surge_vel/kd" value= "0.02"/>
     <!-- heave -->
-     <param name="controller/depth/g" value= "1.4"/>
-     <param name="controller/depth/kp" value= "10"/>
+     <param name="controller/depth/g" value= "0"/>
+     <param name="controller/depth/kp" value= "20"/>
      <param name="controller/depth/ki" value= "0"/>
      <param name="controller/depth/kd" value= "0"/>
     <!-- heading -->

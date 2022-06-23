@@ -53,6 +53,7 @@ class DepthController:
         
     def desired_val_callback(self, msg):
         self.desired_val = msg.data
+        print("recieved_desired")
 
     def get_params(self):
         self.g = rospy.get_param('controller/depth/g', 0.0)
@@ -93,7 +94,7 @@ class DepthController:
         # Control:
         self.controller.set_step(dt)
         e = self.desired_val - self.z_est
-        control_effort = -self.controller.control(e, self.zdot_est, bias=self.g)
+        control_effort = self.controller.control(e, self.zdot_est, bias=self.g)
         # print(f"depth = {self.depth_wrt_startup}")
         # print(f"z_est = {self.z_est}")
         # print(f"err = {e}")
