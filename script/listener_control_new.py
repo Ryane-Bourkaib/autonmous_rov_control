@@ -400,18 +400,19 @@ class Master:
         self.send_setpoints(depth=self.depth_desired, yaw=self.yaw_desired,
                             surge=self.surge_desired, sway=self.sway_desired, pitch=self.pitch_desired)
         
-        rospy.Subscriber("controller/surge_vel/effort",
-                         Float64MultiArray, self.surge_vel_cb)
-        rospy.Subscriber("controller/surge/effort",
-                         Float64MultiArray, self.surge_cb)
-        rospy.Subscriber("controller/yaw/effort",
-                         Float64MultiArray, self.yaw_cb)
-        rospy.Subscriber("controller/pitch/effort",
-                         Float64MultiArray, self.pitch_cb)
-        rospy.Subscriber("controller/depth/effort",
-                         Float64MultiArray, self.depth_cb)
-        rospy.Subscriber("controller/sway/effort",
-                         Float64MultiArray, self.sway_cb)
+        if not set_mode[0]:
+            rospy.Subscriber("controller/surge_vel/effort",
+                            Float64MultiArray, self.surge_vel_cb)
+            rospy.Subscriber("controller/surge/effort",
+                            Float64MultiArray, self.surge_cb)
+            rospy.Subscriber("controller/yaw/effort",
+                            Float64MultiArray, self.yaw_cb)
+            rospy.Subscriber("controller/pitch/effort",
+                            Float64MultiArray, self.pitch_cb)
+            rospy.Subscriber("controller/depth/effort",
+                            Float64MultiArray, self.depth_cb)
+            rospy.Subscriber("controller/sway/effort",
+                            Float64MultiArray, self.sway_cb)
 
     def surge_cb(self, msg):
         self.surge_pwm = self.PWM_Cmd(msg.data[0], b=1500)
